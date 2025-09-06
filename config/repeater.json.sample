@@ -1,0 +1,27 @@
+{
+    "logger_name": "Repeater",
+    "logger_file_path": "logs/output_repeater.log",
+    "logger_level": 2,
+    "logger_max_files": 7,
+
+    "max_topic_number": 20,
+    "max_topic_queue_size": 1024,
+    "max_connection_idle_second": 60,
+
+    "layer_subscribe_addresses": [
+        "127.0.0.1:11001",
+        "127.0.0.1:21001"
+    ],
+    "layer_subscribe_topics": [
+        "SignalA",
+        "Signal01"
+    ],
+
+    "publisher_listen_address": "127.0.0.1",
+    "publisher_listen_port": 10001,
+    "publisher_max_connection": 10,
+
+    "subscriber_listen_address": "127.0.0.1",
+    "subscriber_listen_port": 20001,
+    "subscriber_max_connection": 20
+}

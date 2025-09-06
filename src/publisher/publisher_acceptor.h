@@ -1,0 +1,18 @@
+#ifndef _PUBLISHER_ACCEPTOR_H_
+#define _PUBLISHER_ACCEPTOR_H_
+
+#include "connection/acceptor.h"
+
+namespace publisher {
+
+    class PublisherBootstrap : public connection::AbstractBootstrap {
+    public:
+        PublisherBootstrap() {};
+        ~PublisherBootstrap() {};
+    
+    protected:
+        void acceptHandle(repeater::RepeaterConfig &config, repeater::GlobalContext &context, int client_fd);
+    };
+}
+
+#endif

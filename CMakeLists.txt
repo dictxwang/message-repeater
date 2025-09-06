@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.10)
 project(message_repeater VERSION 0.1.0 LANGUAGES CXX)
 
 set(STARTER_TEST "test_starter")
-set(STARTER_AGENT "repeater_starter")
+set(STARTER_REPEATER "repeater_starter")
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20")
@@ -35,20 +35,20 @@ include_directories(
 #     "src/common/*")
 # add_library(common ${LIB_COMMON_SRC})
 
-# # json
-# FILE(GLOB_RECURSE LIB_JSON_SRC RELATIVE ${CMAKE_SOURCE_DIR}
-#     "src/json/*")
-# add_library(json ${LIB_JSON_SRC})
+# json
+FILE(GLOB_RECURSE LIB_JSON_SRC RELATIVE ${CMAKE_SOURCE_DIR}
+    "src/json/*")
+add_library(json ${LIB_JSON_SRC})
 
-# # config
-# FILE(GLOB_RECURSE LIB_CONFIG_SRC RELATIVE ${CMAKE_SOURCE_DIR}
-#     "src/config/*")
-# add_library(config ${LIB_CONFIG_SRC})
+# config
+FILE(GLOB_RECURSE LIB_CONFIG_SRC RELATIVE ${CMAKE_SOURCE_DIR}
+    "src/config/*")
+add_library(config ${LIB_CONFIG_SRC})
 
-# # util
-# FILE(GLOB_RECURSE LIB_UTIL_SRC RELATIVE ${CMAKE_SOURCE_DIR}
-#     "src/util/*")
-# add_library(util ${LIB_UTIL_SRC})
+# util
+FILE(GLOB_RECURSE LIB_UTIL_SRC RELATIVE ${CMAKE_SOURCE_DIR}
+    "src/util/*")
+add_library(util ${LIB_UTIL_SRC})
 # target_link_libraries(util
 #     OpenSSL::SSL OpenSSL::Crypto
 # )
@@ -79,15 +79,15 @@ add_executable(${STARTER_TEST} "src/test_starter.cpp")
 target_link_libraries(${STARTER_TEST}
 
     ${_LIB_SPDLOG}
-    # json
+    json
     CURL::libcurl
     OpenSSL::SSL OpenSSL::Crypto
-    # config
+    config
     # util
     # common
 )
 
-# add_executable(${STARTER_AGENT} "src/agent_starter.cpp")
-# target_link_libraries(${STARTER_AGENT}
+# add_executable(${STARTER_REPEATER} "src/repeater_starter.cpp")
+# target_link_libraries(${STARTER_REPEATER}
 #     agent
 # )

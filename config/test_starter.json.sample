@@ -1,0 +1,8 @@
+{
+    "logger_name": "Main",
+    "logger_file_path": "logs/output_main.log",
+    "logger_level": 2,
+    "logger_max_files": 7,
+
+    "version": "v0.0.1"
+}
