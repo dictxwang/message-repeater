@@ -39,3 +39,16 @@
 
 # debug information files
 *.dwo
+
+*.log
+.DS_Store
+.git/
+.vscode
+
+build/
+logs/
+*.json
+
+*.pid*
+test_starter
+repeater_starter
