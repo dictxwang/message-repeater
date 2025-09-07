@@ -132,7 +132,25 @@ namespace connection {
 
     void AbstractBootstrap::startAliveDetection(repeater::RepeaterConfig &config, repeater::GlobalContext context) {
 
-        // TODO
+        while (true) {
+            this_thread::sleep_for(chrono::seconds(1));
+            std::unique_lock<std::shared_mutex> w_lock(this->rw_lock_);
+
+            uint64_t now = common_tools::get_current_epoch();
+            vector<string> idle_expired_keys;
+            for (auto [k, v] : this->client_connections_) {
+                if (v.latestHeartbeat + config.max_connection_idle_second < now) {
+                    idle_expired_keys.push_back(k);
+                    close(v.clientFd);
+                    info_log("{} close connection {}:{}", this->role_, v.clientIP, v.clientPort);
+                }
+            }
+            for (string key : idle_expired_keys) {
+                this->client_connections_.erase(key);
+                info_log("{} remove connection {}", this->role_, key);
+            }
+            w_lock.unlock();
+        }
     }
 
     void AbstractBootstrap::refreshKeepAlive(string client_ip, int client_port) {
@@ -144,6 +162,8 @@ namespace connection {
             std::unique_lock<std::shared_mutex> w_lock(this->rw_lock_);
             this->client_connections_[key] = connection->second;
         }
+
+        std::cout << "connections size: " << this->client_connections_.size() << std::endl;
     }
 
     void AbstractBootstrap::acceptHandle(repeater::RepeaterConfig &config, repeater::GlobalContext &context, int client_fd, string client_ip, int client_port) {
