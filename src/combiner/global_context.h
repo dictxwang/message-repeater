@@ -13,6 +13,9 @@ namespace repeater {
         ~GlobalContext() {};
     
     private:
+
+    public:
+        void init(RepeaterConfig& config);
     };
 }
 #endif

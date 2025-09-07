@@ -9,6 +9,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <cstdint>
 #include <unordered_map>
 #include <thread>
 #include "logger/logger.h"
@@ -19,6 +20,13 @@
 using namespace std;
 
 namespace connection {
+
+    const uint32_t MESSAGE_TYPE_PING = 101;
+    const uint32_t MESSAGE_TYPE_PONG = 102;
+    const uint32_t MESSAGE_TYPE_NORMAL_DATA = 201;
+
+    const string SERVER_ROLE_PUBLISHER = "publisher";
+    const string SERVER_ROLE_SUBSCRIBER = "subscriber";
 
     struct ConnectionEntity {
         string clientIP;
@@ -32,12 +40,13 @@ namespace connection {
         AbstractBootstrap() {};
         virtual ~AbstractBootstrap() {};
 
+    protected:
+        string role_;
     private:
         int server_fd_;
         string listen_address_;
         int listen_port_;
         int max_connection_;
-        string role_;
 
         unordered_map<string, ConnectionEntity> client_connections_;
 

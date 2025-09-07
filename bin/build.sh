@@ -44,7 +44,7 @@ function link_process_files() {
     if [[ -e build/test_starter ]]; then
         ln -s build/test_starter test_starter
     fi
-    if [[ -e build/agent_starter ]]; then
+    if [[ -e build/repeater_starter ]]; then
         ln -s build/repeater_starter repeater_starter
     fi
 }

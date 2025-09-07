@@ -9,41 +9,55 @@ namespace connection {
         this->role_ = role;
 
         // Create socket
-        server_fd_ = socket(AF_INET, SOCK_STREAM, 0);
-        if (server_fd_ < 0) {
+        this->server_fd_ = socket(AF_INET, SOCK_STREAM, 0);
+        if (this->server_fd_ <= 0) {
             err_log("fail to create socket: {}", strerror(errno));
             return;
         }
-        
+
         // Allow socket reuse
         int opt = 1;
-        if (setsockopt(server_fd_, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
+        if (setsockopt(this->server_fd_, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))) {
             err_log("fail to set socket options: {}", strerror(errno));
-            close(server_fd_);
-            return;
-        }
-        
-        // Bind address
-        struct sockaddr_in address;
-        address.sin_family = AF_INET;
-        address.sin_port = htons(listen_port);
-        
-        if (inet_pton(AF_INET, listen_address.c_str(), &address.sin_addr) <= 0) {
-            err_log("invalid address: {}", listen_address);
-            close(server_fd_);
+            close(this->server_fd_);
             return;
         }
 
-        bind(server_fd_, (struct sockaddr*)&address, sizeof(address));
-        
+        // Bind address
+        struct sockaddr_in address;
+        memset(&address, 0, sizeof(address));
+        address.sin_family = AF_INET;
+        address.sin_addr.s_addr = INADDR_ANY;
+        address.sin_port = htons(listen_port);
+
+        if (inet_pton(AF_INET, listen_address.c_str(), &address.sin_addr) <= 0) {
+            err_log("invalid address: {}", listen_address);
+            close(this->server_fd_);
+            return;
+        }
+
+        if (::bind(this->server_fd_, (struct sockaddr*)&address, sizeof(address)) < 0) {
+            err_log("failed to bind: {}", strerror(errno));
+            close(this->server_fd_);
+            return;
+        }
+
         // Start listening
-        if (listen(server_fd_, max_connection) < 0) {
+        if (listen(this->server_fd_, 10) < 0) {
             err_log("failed to listen: {}", strerror(errno));
-            close(server_fd_);
+            close(this->server_fd_);
             return;
         }
 
         info_log("{} listening at {}:{}", this->role_, this->listen_address_, this->listen_port_);
+
+        // while (true) {
+        //     struct sockaddr_in client_addr;
+        //     socklen_t client_len = sizeof(client_addr);
+        //     std::cout << "before accept" << std::endl;
+        //     int client_fd = accept(this->server_fd_, (struct sockaddr*)&client_addr, &client_len);
+        //     std::cout << "after accept" << std::endl;
+        // }
     }
 
     void AbstractBootstrap::start(repeater::RepeaterConfig &config, repeater::GlobalContext &context) {
@@ -63,23 +77,17 @@ namespace connection {
 
     void AbstractBootstrap::startAccept(repeater::RepeaterConfig &config, repeater::GlobalContext &context) {
 
-
-        std::unique_lock<std::shared_mutex> w_lock(this->rw_lock_);
-        if (this->client_connections_.size() >= this->max_connection_) {
-            warn_log("{} server has max connection", this->role_);
-            return;
-        }
-
         if (this->server_fd_ < 0) {
             err_log("server not initailized");
             return;
         }
         
-        struct sockaddr_in client_addr;
-        socklen_t client_len = sizeof(client_addr);
-        
         while (true) {
-            int client_fd = ::accept(this->server_fd_, (struct sockaddr*)&client_addr, &client_len);
+
+            struct sockaddr_in client_addr;
+            socklen_t client_len = sizeof(client_addr);
+
+            int client_fd = accept(this->server_fd_, (struct sockaddr*)&client_addr, &client_len);
             
             if (client_fd < 0) {
                 if (errno == EINTR) {
@@ -88,7 +96,15 @@ namespace connection {
                 err_log("failed to accept connection: {}", strerror(errno));
                 continue;
             }
-            
+
+            std::unique_lock<std::shared_mutex> w_lock(this->rw_lock_);
+            if (this->client_connections_.size() >= this->max_connection_) {
+                warn_log("{} server reach max connection", this->role_);
+                // TODO send response
+                close(client_fd);
+                return;
+            }
+
             // Get client info
             char client_ip[INET_ADDRSTRLEN];
             inet_ntop(AF_INET, &client_addr.sin_addr, client_ip, INET_ADDRSTRLEN);
@@ -100,7 +116,7 @@ namespace connection {
             entity.clientFd = client_fd;
             entity.latestHeartbeat = common_tools::get_current_epoch();
 
-            info_log("{} create new connection from {}:{} with fd={}", client_ip, client_port, client_fd);
+            info_log("{} create new connection from {}:{} with client_fd={}", this->role_, client_ip, client_port, client_fd);
             
             // Here you would typically:
             // 1. Set socket options (non-blocking, keepalive, etc)
@@ -114,7 +130,7 @@ namespace connection {
             // // In real implementation, keep connection open and handle it
             // close(client_fd);
 
-            thread handle_thread(acceptHandle, ref(config), ref(context), client_fd);
+            thread handle_thread(&AbstractBootstrap::acceptHandle, this, ref(config), ref(context), client_fd);
             handle_thread.detach();
         }
     }
@@ -122,5 +138,10 @@ namespace connection {
     void AbstractBootstrap::startAliveDetection(repeater::RepeaterConfig &config, repeater::GlobalContext context) {
 
         // TODO
+    }
+
+    void AbstractBootstrap::acceptHandle(repeater::RepeaterConfig &config, repeater::GlobalContext &context, int client_fd) {
+        // Base implementation - derived classes should override
+        close(client_fd);
     }
 }

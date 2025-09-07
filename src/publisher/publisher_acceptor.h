@@ -2,6 +2,7 @@
 #define _PUBLISHER_ACCEPTOR_H_
 
 #include "connection/acceptor.h"
+#include <iostream>
 
 namespace publisher {
 

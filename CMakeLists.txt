@@ -83,11 +83,29 @@ target_link_libraries(${STARTER_TEST}
     CURL::libcurl
     OpenSSL::SSL OpenSSL::Crypto
     config
-    # util
-    # common
 )
 
-# add_executable(${STARTER_REPEATER} "src/repeater_starter.cpp")
-# target_link_libraries(${STARTER_REPEATER}
-#     agent
-# )
+# connection
+FILE(GLOB_RECURSE LIB_CONNECTION_SRC RELATIVE ${CMAKE_SOURCE_DIR}
+    "src/connection/*")
+add_library(connection ${LIB_CONNECTION_SRC})
+# publisher
+FILE(GLOB_RECURSE LIB_PUBLISHER_SRC RELATIVE ${CMAKE_SOURCE_DIR}
+    "src/publisher/*")
+add_library(publisher ${LIB_PUBLISHER_SRC})
+# combiner
+FILE(GLOB_RECURSE LIB_COMBINER_SRC RELATIVE ${CMAKE_SOURCE_DIR}
+    "src/combiner/*")
+add_library(combiner ${LIB_COMBINER_SRC})
+
+add_executable(${STARTER_REPEATER} "src/repeater_starter.cpp")
+target_link_libraries(${STARTER_REPEATER}
+    ${_LIB_SPDLOG}
+    json
+    CURL::libcurl
+    OpenSSL::SSL OpenSSL::Crypto
+    config
+    connection
+    publisher
+    combiner
+)
