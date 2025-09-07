@@ -2,15 +2,15 @@
 
 namespace publisher {
 
-    void PublisherBootstrap::acceptHandle(repeater::RepeaterConfig &config, repeater::GlobalContext &context, int client_fd) {
+    void PublisherBootstrap::acceptHandle(repeater::RepeaterConfig &config, repeater::GlobalContext &context, int client_fd, string client_ip, int client_port) {
         
         const size_t HEADER_SIZE = 4;
         const size_t MAX_MESSAGE_SIZE = 65536;
         
         while (true) {
-            // Step1: read header of type
-            uint32_t message_type = 0;
-            ssize_t bytes_received = recv(client_fd, &message_type, HEADER_SIZE, MSG_WAITALL);
+            // Step1: read header of topic length
+            uint32_t topic_length = 0;
+            ssize_t bytes_received = recv(client_fd, &topic_length, HEADER_SIZE, MSG_WAITALL);
             if (bytes_received != HEADER_SIZE) {
                 if (bytes_received == 0) {
                     err_log("client of {} disconnected", this->role_);
@@ -19,13 +19,21 @@ namespace publisher {
                 }
                 break;
             }
-            message_type = ntohl(message_type);
+            topic_length = ntohl(topic_length);
 
             #ifdef OPEN_STD_DEBUG_LOG
-                std::cout << this->role_ << " receive message type: " << message_type << std::endl;
+                std::cout << this->role_ << " receive topic length: " << topic_length << std::endl;
             #endif
 
-            // Step2: read header of main data length
+            // Step2: read header of topic name
+            std::vector<char> topic_buffer(topic_length + 1);
+            bytes_received = recv(client_fd, topic_buffer.data(), topic_length, MSG_WAITALL);
+            if (bytes_received != topic_length) {
+                err_log("fail to read complete topic from client of {}", this->role_);
+                break;
+            }
+
+            // Step3: read header of main data length
             uint32_t message_length = 0;
             bytes_received = recv(client_fd, &message_length, HEADER_SIZE, MSG_WAITALL);
             if (bytes_received != HEADER_SIZE) {
@@ -46,7 +54,7 @@ namespace publisher {
                 break;
             }
 
-            // Step3: read main data
+            // Step4: read main data
             std::vector<char> message_buffer(message_length + 1);
             bytes_received = recv(client_fd, message_buffer.data(), message_length, MSG_WAITALL);
             
@@ -57,17 +65,34 @@ namespace publisher {
 
             message_buffer[message_length] = '\0';
 
-            #ifdef OPEN_STD_DEBUG_LOG
-                std::cout << this->role_ << " receive message: " << message_type << "," << message_length << "," << message_buffer.data() << std::endl;
-            #endif
+            // #ifdef OPEN_STD_DEBUG_LOG
+                std::cout << this->role_ << " receive data: " << topic_length << "," << topic_buffer.data() << "," << message_length << "," << message_buffer.data() << std::endl;
+            // #endif
 
-            // Step4: process main data by message type
-            if (message_type == connection::MESSAGE_TYPE_PING) {
-                // TODO
-            } else if (message_type == connection::MESSAGE_TYPE_NORMAL_DATA) {
-                // TODO
+            // Step5: process main data by message type
+            if (topic_buffer.data() == connection::MESSAGE_TOPIC_PING) {
+                // 1. Send topic length (ensure network byte order)
+                uint32_t net_value = htonl(connection::MESSAGE_TOPIC_PONG.size()); // Convert to network byte order
+                send(client_fd, &net_value, 4, 0);
+
+                // 2. Send topic string data
+                send(client_fd, connection::MESSAGE_TOPIC_PONG.c_str(), connection::MESSAGE_TOPIC_PONG.size(), 0);
+
+                string pong_message = "ok";
+                // 3. Send the string length (ensure network byte order)
+                uint32_t msg_len = htonl(pong_message.length()); // Send length of string
+                send(client_fd, &msg_len, 4, 0);
+
+                // 4. Send the string data
+                send(client_fd, pong_message.c_str(), pong_message.length(), 0);
+
+                this->refreshKeepAlive(client_ip, client_port);
+
+            } else if (topic_buffer.data() == connection::MESSAGE_TOPIC_PONG) {
+                // Ingore this topic
             } else {
-                warn_log("{} receive not supported message type {}", this->role_, message_type);
+                string message_text = message_buffer.data();
+                std::cout << "recevie message json: " << topic_buffer.data() << "," << message_text << std::endl;
             }
         }
 

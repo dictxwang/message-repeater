@@ -50,14 +50,6 @@ namespace connection {
         }
 
         info_log("{} listening at {}:{}", this->role_, this->listen_address_, this->listen_port_);
-
-        // while (true) {
-        //     struct sockaddr_in client_addr;
-        //     socklen_t client_len = sizeof(client_addr);
-        //     std::cout << "before accept" << std::endl;
-        //     int client_fd = accept(this->server_fd_, (struct sockaddr*)&client_addr, &client_len);
-        //     std::cout << "after accept" << std::endl;
-        // }
     }
 
     void AbstractBootstrap::start(repeater::RepeaterConfig &config, repeater::GlobalContext &context) {
@@ -116,6 +108,9 @@ namespace connection {
             entity.clientFd = client_fd;
             entity.latestHeartbeat = common_tools::get_current_epoch();
 
+            string key = std::string(client_ip) + ":" + std::to_string(client_port);
+            this->client_connections_[key] = entity;
+
             info_log("{} create new connection from {}:{} with client_fd={}", this->role_, client_ip, client_port, client_fd);
             
             // Here you would typically:
@@ -130,7 +125,7 @@ namespace connection {
             // // In real implementation, keep connection open and handle it
             // close(client_fd);
 
-            thread handle_thread(&AbstractBootstrap::acceptHandle, this, ref(config), ref(context), client_fd);
+            thread handle_thread(&AbstractBootstrap::acceptHandle, this, ref(config), ref(context), client_fd, std::string(client_ip), client_port);
             handle_thread.detach();
         }
     }
@@ -140,7 +135,18 @@ namespace connection {
         // TODO
     }
 
-    void AbstractBootstrap::acceptHandle(repeater::RepeaterConfig &config, repeater::GlobalContext &context, int client_fd) {
+    void AbstractBootstrap::refreshKeepAlive(string client_ip, int client_port) {
+
+        string key = std::string(client_ip) + ":" + std::to_string(client_port);
+        auto connection = this->client_connections_.find(key);
+        if (connection != this->client_connections_.end()) {
+            connection->second.latestHeartbeat = common_tools::get_current_epoch();
+            std::unique_lock<std::shared_mutex> w_lock(this->rw_lock_);
+            this->client_connections_[key] = connection->second;
+        }
+    }
+
+    void AbstractBootstrap::acceptHandle(repeater::RepeaterConfig &config, repeater::GlobalContext &context, int client_fd, string client_ip, int client_port) {
         // Base implementation - derived classes should override
         close(client_fd);
     }

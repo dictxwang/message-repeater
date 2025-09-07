@@ -21,9 +21,8 @@ using namespace std;
 
 namespace connection {
 
-    const uint32_t MESSAGE_TYPE_PING = 101;
-    const uint32_t MESSAGE_TYPE_PONG = 102;
-    const uint32_t MESSAGE_TYPE_NORMAL_DATA = 201;
+    const string MESSAGE_TOPIC_PING = "ping";
+    const string MESSAGE_TOPIC_PONG = "pong";
 
     const string SERVER_ROLE_PUBLISHER = "publisher";
     const string SERVER_ROLE_SUBSCRIBER = "subscriber";
@@ -57,7 +56,8 @@ namespace connection {
         void startAccept(repeater::RepeaterConfig &config, repeater::GlobalContext &context);
 
     protected:
-        virtual void acceptHandle(repeater::RepeaterConfig &config, repeater::GlobalContext &context, int client_fd);
+        void refreshKeepAlive(string client_ip, int client_port);
+        virtual void acceptHandle(repeater::RepeaterConfig &config, repeater::GlobalContext &context, int client_fd, string client_ip, int client_port);
 
     public:
         void init(string role, string listen_address, int listen_port, int max_connection);

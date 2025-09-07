@@ -12,7 +12,7 @@ namespace publisher {
         ~PublisherBootstrap() {};
     
     protected:
-        void acceptHandle(repeater::RepeaterConfig &config, repeater::GlobalContext &context, int client_fd);
+        void acceptHandle(repeater::RepeaterConfig &config, repeater::GlobalContext &context, int client_fd, string client_ip, int client_port);
     };
 }
 
