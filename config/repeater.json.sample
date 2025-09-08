@@ -5,9 +5,13 @@
     "logger_max_files": 7,
 
     "max_topic_number": 20,
-    "max_topic_queue_size": 1024,
+    "max_topic_circle_size": 1024,
+    "max_message_body_size": 4096,
     "max_connection_idle_second": 60,
 
+    "socket_write_timeout_second": 5,
+
+    "enable_layer_subscribe": false,
     "layer_subscribe_addresses": [
         "127.0.0.1:11001",
         "127.0.0.1:21001"

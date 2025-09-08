@@ -97,6 +97,16 @@ namespace connection {
                 return;
             }
 
+            // Set Write timeout
+            struct timeval timeout;
+            timeout.tv_sec = config.socket_write_timeout_second;  // 5 seconds
+            timeout.tv_usec = 0; // 0 microseconds
+            if (setsockopt(client_fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout)) < 0) {
+                warn_log("{} fail to set write timeout for client", this->role_);
+                close(client_fd);
+                return;
+            }
+
             // Get client info
             char client_ip[INET_ADDRSTRLEN];
             inet_ntop(AF_INET, &client_addr.sin_addr, client_ip, INET_ADDRSTRLEN);
@@ -149,6 +159,7 @@ namespace connection {
                 this->client_connections_.erase(key);
                 info_log("{} remove connection {}", this->role_, key);
             }
+            // TODO remove circle
             w_lock.unlock();
         }
     }
@@ -162,12 +173,62 @@ namespace connection {
             std::unique_lock<std::shared_mutex> w_lock(this->rw_lock_);
             this->client_connections_[key] = connection->second;
         }
-
-        std::cout << "connections size: " << this->client_connections_.size() << std::endl;
     }
 
     void AbstractBootstrap::acceptHandle(repeater::RepeaterConfig &config, repeater::GlobalContext &context, int client_fd, string client_ip, int client_port) {
         // Base implementation - derived classes should override
         close(client_fd);
+    }
+
+    bool AbstractBootstrap::sendSocketData(int client_fd, string topic, string message) {
+        
+        // // 1. Send topic length (ensure network byte order)
+        // uint32_t net_value = htonl(topic.size()); // Convert to network byte order
+        // ssize_t bytes_sent = send(client_fd, &net_value, 4, 0);
+        // if (bytes_sent)
+
+        // // 2. Send topic string data
+        // send(client_fd, topic.c_str(), topic.size(), 0);
+
+        // // 3. Send the string length (ensure network byte order)
+        // uint32_t msg_len = htonl(message.length()); // Send length of string
+        // send(client_fd, &msg_len, 4, 0);
+
+        // // 4. Send the string data
+        // send(client_fd, message.c_str(), message.length(), 0);
+
+        vector<char> buffer;
+        // Serialize string length
+        size_t topic_length = topic.length();
+        buffer.insert(buffer.end(), reinterpret_cast<const char*>(&topic_length),
+                    reinterpret_cast<const char*>(&topic_length) + sizeof(topic_length));
+        // Serialize string data
+        buffer.insert(buffer.end(), topic.begin(), topic.end());
+
+        // Serialize string length
+        size_t message_length = message.length();
+        buffer.insert(buffer.end(), reinterpret_cast<const char*>(&message_length),
+                    reinterpret_cast<const char*>(&message_length) + sizeof(message_length));
+        // Serialize string data
+        buffer.insert(buffer.end(), message.begin(), message.end());
+
+        ssize_t bytes_sent = send(client_fd, buffer.data(), buffer.size(), 0);
+        
+        if (bytes_sent < 0) {
+            #ifdef OPEN_STD_DEBUG_LOG
+                std::cout << "Error sending data or timeout occurred" << std::endl;
+            #endif
+            return false;
+        } else if (bytes_sent == 0) {
+            #ifdef OPEN_STD_DEBUG_LOG
+                std::cout << "No data sent (possibly due to timeout or closed connection)" << std::endl;
+            #endif
+            return false;
+        } else {
+            #ifdef OPEN_STD_DEBUG_LOG
+                std::cout << "Sent " << bytes_sent << " bytes" << std::endl;
+            #endif
+        }
+        return true;
     }
 }

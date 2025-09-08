@@ -65,34 +65,52 @@ namespace publisher {
 
             message_buffer[message_length] = '\0';
 
-            // #ifdef OPEN_STD_DEBUG_LOG
+            #ifdef OPEN_STD_DEBUG_LOG
                 std::cout << this->role_ << " receive data: " << topic_length << "," << topic_buffer.data() << "," << message_length << "," << message_buffer.data() << std::endl;
-            // #endif
+            #endif
 
             // Step5: process main data by message type
-            if (topic_buffer.data() == connection::MESSAGE_TOPIC_PING) {
-                // 1. Send topic length (ensure network byte order)
-                uint32_t net_value = htonl(connection::MESSAGE_TOPIC_PONG.size()); // Convert to network byte order
-                send(client_fd, &net_value, 4, 0);
+            if (topic_buffer.data() == connection::MESSAGE_OP_TOPIC_PING) {
+                // // 1. Send topic length (ensure network byte order)
+                // uint32_t net_value = htonl(connection::MESSAGE_OP_TOPIC_PONG.size()); // Convert to network byte order
+                // send(client_fd, &net_value, 4, 0);
 
-                // 2. Send topic string data
-                send(client_fd, connection::MESSAGE_TOPIC_PONG.c_str(), connection::MESSAGE_TOPIC_PONG.size(), 0);
+                // // 2. Send topic string data
+                // send(client_fd, connection::MESSAGE_OP_TOPIC_PONG.c_str(), connection::MESSAGE_OP_TOPIC_PONG.size(), 0);
 
-                string pong_message = "ok";
-                // 3. Send the string length (ensure network byte order)
-                uint32_t msg_len = htonl(pong_message.length()); // Send length of string
-                send(client_fd, &msg_len, 4, 0);
+                // string pong_message = "ok";
+                // // 3. Send the string length (ensure network byte order)
+                // uint32_t msg_len = htonl(pong_message.length()); // Send length of string
+                // send(client_fd, &msg_len, 4, 0);
 
-                // 4. Send the string data
-                send(client_fd, pong_message.c_str(), pong_message.length(), 0);
+                // // 4. Send the string data
+                // send(client_fd, pong_message.c_str(), pong_message.length(), 0);
 
-                this->refreshKeepAlive(client_ip, client_port);
+                if (this->sendSocketData(client_fd, connection::MESSAGE_OP_TOPIC_PONG, "ok")) {
+                    this->refreshKeepAlive(client_ip, client_port);
+                }
 
-            } else if (topic_buffer.data() == connection::MESSAGE_TOPIC_PONG) {
+            } else if (topic_buffer.data() == connection::MESSAGE_OP_TOPIC_PONG) {
                 // Ingore this topic
+            } else if (topic_buffer.data() == connection::MESSAGE_OP_TOPIC_SUBSCRIBE) {
+                // Ingore this topic in publisher
             } else {
                 string message_text = message_buffer.data();
-                std::cout << "recevie message json: " << topic_buffer.data() << "," << message_text << std::endl;
+                
+                #ifdef OPEN_STD_DEBUG_LOG
+                    std::cout << "recevie message json from " << client_ip << ":" << client_port << " " << topic_buffer.data() << "," << message_text << std::endl;
+                #endif
+
+                if (message_text.size() > config.max_message_body_size) {
+                    warn_log("too large message json: {}", message_text);
+                    continue;
+                }
+
+                if (context.get_message_circle_composite()->createCircleIfAbsent(topic_buffer.data(), config.max_topic_circle_size)) {
+                    context.get_message_circle_composite()->appendMessageToCircle(topic_buffer.data(), message_text);
+                } else {
+                    warn_log("cannot create circle for {} {}", topic_buffer.data(), message_text);
+                }
             }
         }
 

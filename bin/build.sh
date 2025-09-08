@@ -50,12 +50,19 @@ function link_process_files() {
 }
 
 BUILD_TYPE="all"
-if [ $# -eq 1 ];
+BUILD_DEBUG=""
+
+if [ $# -ge 1 ];
 then
     BUILD_TYPE=$1
 else
     echo "Usage: ./build.sh [all|third|main]"
     exit 0
+fi
+
+if [ $# -gt 1 ];
+then
+    BUILD_DEBUG="ON"
 fi
 
 prepare
@@ -69,7 +76,11 @@ if [[ ${BUILD_TYPE} == "third" || ${BUILD_TYPE} == "all" ]]; then
 fi
 
 if [[ ${BUILD_TYPE} == "all" || ${BUILD_TYPE} == "main" ]]; then
-    cmake ..
+    if [[ ${BUILD_DEBUG} == "ON" ]]; then
+        cmake -DUSE_DEBUG_MODE=ON ..
+    else
+        cmake ..
+    fi
     make
 
     link_process_files

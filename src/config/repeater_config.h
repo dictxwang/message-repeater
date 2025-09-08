@@ -19,9 +19,13 @@ namespace repeater {
 
     public:
         int max_topic_number;
-        int max_topic_queue_size;
+        int max_topic_circle_size;
+        int max_message_body_size;
         int max_connection_idle_second;
 
+        int socket_write_timeout_second;
+
+        bool enable_layer_subscribe;
         vector<string> layer_subscribe_addresses;
         vector<string> layer_subscribe_topics;
 

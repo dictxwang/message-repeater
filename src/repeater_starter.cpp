@@ -26,13 +26,18 @@ int main(int argc, char const *argv[]) {
     repeater::GlobalContext global_context;
     global_context.init(config);
 
+    // init and start publisher bootstrap
     publisher::PublisherBootstrap publisherBootstrap;
     publisherBootstrap.init(connection::SERVER_ROLE_PUBLISHER, config.publisher_listen_address, config.publisher_listen_port, config.publisher_max_connection);
     publisherBootstrap.start(config, global_context);
 
+    // init and start subscriber bootstrap
+
+    // init and start layer subscribe
+
     while(true) {
-        // std::cout << "agent starter keep running" << std::endl;
-        // info_log("agent stater keep running");
+        // std::cout << "repeator starter keep running" << std::endl;
+        // info_log("repeator stater keep running");
         std::this_thread::sleep_for(std::chrono::seconds(10));
     }
     return 0;

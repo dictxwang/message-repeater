@@ -12,9 +12,13 @@ namespace repeater {
 
         // Parse own configuration properties
         this->max_topic_number = this->doc_["max_topic_number"].asInt();
-        this->max_topic_queue_size = this->doc_["max_topic_queue_size"].asInt();
+        this->max_topic_circle_size = this->doc_["max_topic_circle_size"].asInt();
+        this->max_message_body_size = this->doc_["max_message_body_size"].asInt();
         this->max_connection_idle_second = this->doc_["max_connection_idle_second"].asInt();
 
+        this->socket_write_timeout_second = this->doc_["socket_write_timeout_second"].asInt();
+
+        this->enable_layer_subscribe = this->doc_["enable_layer_subscribe"].asBool();
         for (Json::Value addr : this->doc_["layer_subscribe_addresses"]) {
             this->layer_subscribe_addresses.push_back(addr.asString());
         }
@@ -29,7 +33,7 @@ namespace repeater {
         this->subscriber_listen_address = this->doc_["subscriber_listen_address"].asString();
         this->subscriber_listen_port = this->doc_["subscriber_listen_port"].asInt();
         this->subscriber_max_connection = this->doc_["subscriber_max_connection"].asInt();
-        
+
         return true;
     }
 }

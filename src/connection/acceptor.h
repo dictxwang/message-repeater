@@ -12,6 +12,8 @@
 #include <cstdint>
 #include <unordered_map>
 #include <thread>
+#include <iostream>
+#include <cstring>
 #include "logger/logger.h"
 #include "config/repeater_config.h"
 #include "combiner/global_context.h"
@@ -21,8 +23,9 @@ using namespace std;
 
 namespace connection {
 
-    const string MESSAGE_TOPIC_PING = "ping";
-    const string MESSAGE_TOPIC_PONG = "pong";
+    const string MESSAGE_OP_TOPIC_PING = "ping";
+    const string MESSAGE_OP_TOPIC_PONG = "pong";
+    const string MESSAGE_OP_TOPIC_SUBSCRIBE = "subscribe";
 
     const string SERVER_ROLE_PUBLISHER = "publisher";
     const string SERVER_ROLE_SUBSCRIBER = "subscriber";
@@ -56,6 +59,7 @@ namespace connection {
         void startAccept(repeater::RepeaterConfig &config, repeater::GlobalContext &context);
 
     protected:
+        bool sendSocketData(int client_fd, string topic, string message);
         void refreshKeepAlive(string client_ip, int client_port);
         virtual void acceptHandle(repeater::RepeaterConfig &config, repeater::GlobalContext &context, int client_fd, string client_ip, int client_port);
 
