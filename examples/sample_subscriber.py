@@ -1,5 +1,5 @@
 # -*- coding: utf8 -*-
-__author__ = 'wangqiang'
+__author__ = 'dictwang'
 
 import socket
 import time
@@ -7,11 +7,12 @@ import threading
 
 MessageTopic_Ping = "ping"
 MessageTopic_Pong = "pong"
+MessageTopic_Subscribe = "subscribe"
 
 Pong_Success_Text = "ok"
 
 
-class MessagePublisher:
+class MessageSubscribe:
     def __init__(self, server_addr, server_port) -> None:
         self._server_addr = server_addr
         self._server_port = server_port
@@ -22,7 +23,65 @@ class MessagePublisher:
         self._create_connection()
         self._start_heartbeat()
 
-    def send_message(self, topic_name, message_json) -> bool:
+    def subscribe(self, topics) -> bool:
+        if not self._connected:
+            return False
+
+        topics = ",".join(list(map(lambda x : "\"" + x + "\"", topics)))
+        body = "{\"topics\": [" + topics + "]}"
+
+        send_data: bytes = int.to_bytes(4, length=4, byteorder="big")
+        topic_data = MessageTopic_Ping.encode("utf-8")
+        send_data += topic_data
+
+        body_data = body.encode("utf-8")
+        send_data += int.to_bytes(len(body_data), length=4, byteorder="big")
+        send_data += body_data
+
+        try:
+            print("before send all")
+            self._client_fd.sendall(send_data)
+            print("after send all")
+
+            topic_length_data = self._client_fd.recv(4)
+            if len(topic_length_data) < 4:
+                return False
+            topic_length = int.from_bytes(topic_length_data, 'big')
+
+            if topic_length < 1:
+                return False
+
+            topic_data = self._client_fd.recv(topic_length)
+            if len(topic_data) <= 0:
+                return False
+
+            topic_name = topic_data.decode("utf-8")
+            if topic_name != MessageTopic_Subscribe:
+                return False
+
+            body_length_data = self._client_fd.recv(4)
+            if len(body_length_data) < 4:
+                return False
+            body_length = int.from_bytes(body_length_data, 'big')
+            if body_length <= 0:
+                return False
+
+            body_data = self._client_fd.recv(body_length)
+            if len(body_data) <= 0:
+                return False
+            text = body_data.decode("utf-8")
+            if text.lower().find(Pong_Success_Text) >= 0:
+                # success
+                print(f"receive subscribe: {text}")
+                return True
+            else:
+                return False
+        except Exception as e:
+            print(f"An error occurred: {e}")
+
+        return False
+
+    def read_message(self, topic_name, message_json) -> bool:
         if not self._connected:
             return False
 
@@ -57,6 +116,7 @@ class MessagePublisher:
         t.start()
 
     def _send_ping_text(self):
+        print(101)
         send_data: bytes = int.to_bytes(4, length=4, byteorder="big")
         topic_data = MessageTopic_Ping.encode("utf-8")
         send_data += topic_data
@@ -65,13 +125,17 @@ class MessagePublisher:
         send_data += int.to_bytes(len(body_data), length=4, byteorder="big")
         send_data += body_data
 
+        print(102)
+
         while True:
             if not self._connected:
                 break
             time.sleep(10)
 
             try:
+                print("before send ping")
                 self._client_fd.sendall(send_data)
+                print("after send ping")
 
                 topic_length_data = self._client_fd.recv(4)
                 if len(topic_length_data) < 4:
@@ -102,7 +166,7 @@ class MessagePublisher:
                 text = body_data.decode("utf-8")
                 if text.lower().find(Pong_Success_Text) >= 0:
                     # success
-                    # print(f"receive pong: {text}")
+                    print(f"receive pong: {text}")
                     pass
                 else:
                     # fail
@@ -118,16 +182,13 @@ class MessagePublisher:
 
 
 if __name__ == "__main__":
-    publisher = MessagePublisher("127.0.0.1", 10001)
-    publisher.connect()
+    subscriber = MessageSubscribe("127.0.0.1", 20001)
+    subscriber.connect()
 
-    # send message
+    # # subscribe
+    # time.sleep(5)
+    # topics = ["T001", "T002"]
+    # result = subscriber.subscribe(topics)
+
     while True:
-        time.sleep(5)
-
-        topic = "T001"
-        message = "{\"side\": \"BUY\"}"
-        result = publisher.send_message(topic, message)
-        if not result:
-            # reconnect
-            publisher.connect()
+        pass
