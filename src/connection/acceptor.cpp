@@ -237,8 +237,8 @@ namespace connection {
         ssize_t bytes_sent = 0;
         
         try {
-            send(client_fd, buffer.data(), buffer.size(), 0);
-        } catch (Exceptioin &e) {
+            bytes_sent = send(client_fd, buffer.data(), buffer.size(), 0);
+        } catch (std::exception &e) {
             #ifdef OPEN_STD_DEBUG_LOG
                 std::cout << "exception sending data occurred: " << e.what() << std::endl;
             #endif
