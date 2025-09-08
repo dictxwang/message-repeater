@@ -68,7 +68,7 @@ class MessagePublisher:
         while True:
             if not self._connected:
                 break
-            time.sleep(1)
+            time.sleep(10)
 
             try:
                 self._client_fd.sendall(send_data)

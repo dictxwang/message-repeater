@@ -147,19 +147,26 @@ namespace connection {
             std::unique_lock<std::shared_mutex> w_lock(this->rw_lock_);
 
             uint64_t now = common_tools::get_current_epoch();
-            vector<string> idle_expired_keys;
+            vector<pair<string, int>> idle_expired_keys;
             for (auto [k, v] : this->client_connections_) {
                 if (v.latestHeartbeat + config.max_connection_idle_second < now) {
-                    idle_expired_keys.push_back(k);
+                    idle_expired_keys.push_back(std::make_pair(v.clientIP, v.clientPort));
                     close(v.clientFd);
-                    info_log("{} close connection {}:{}", this->role_, v.clientIP, v.clientPort);
                 }
             }
-            for (string key : idle_expired_keys) {
+            for (pair<string, int> p : idle_expired_keys) {
+                string key = p.first + std::to_string(p.second);
                 this->client_connections_.erase(key);
-                info_log("{} remove connection {}", this->role_, key);
+                info_log("{} close and remove connection {}", this->role_, key);
+
+                // clear resource
+                this->clearConnectionResource(context, p.first, p.second);
             }
-            // TODO remove circle
+
+            #ifdef OPEN_STD_DEBUG_LOG
+                std::cout << this->role_ << " after alive detetion remain connections size " << this->client_connections_.size() << std::endl;
+            #endif
+
             w_lock.unlock();
         }
     }
