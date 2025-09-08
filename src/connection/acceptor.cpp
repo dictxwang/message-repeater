@@ -186,6 +186,13 @@ namespace connection {
         }
     }
 
+    bool AbstractBootstrap::isConnectionExists(string client_ip, int client_port) {
+
+        string key = std::string(client_ip) + ":" + std::to_string(client_port);
+        auto connection = this->client_connections_.find(key);
+        return connection != this->client_connections_.end();
+    }
+
     void AbstractBootstrap::acceptHandle(repeater::RepeaterConfig &config, repeater::GlobalContext &context, int client_fd, string client_ip, int client_port) {
         // Base implementation - derived classes should override
         close(client_fd);

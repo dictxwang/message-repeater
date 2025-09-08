@@ -6,20 +6,57 @@ namespace subscriber {
 
     void SubscriberBootstrap::acceptHandle(repeater::RepeaterConfig &config, repeater::GlobalContext &context, int client_fd, string client_ip, int client_port) {
 
-        const size_t HEADER_SIZE = 4;
-        const size_t MAX_MESSAGE_SIZE = 65536;
 
-        thread write_thread([&] {});
+        thread write_thread([this, client_fd, client_ip, client_port, &config, &context] {
+            while (true) {
+                if (!this->isConnectionExists(client_ip, client_port)) {
+                    info_log("subscriber connection not exists for {}:{}", client_ip, client_port);
+                    break;
+                }
+                if (!this->isSubscribed(client_ip, client_port)) {
+                    continue;
+                }
+
+                optional<shared_ptr<repeater::ConsumeRecord>> record = context.get_consume_record_composite()->getRecord(client_ip, client_port);
+                if (!record.has_value()) {
+                    break;
+                }
+
+                for (string topic : record.value()->getTopics()) {
+                    optional<repeater::CircleMeta> meta = record.value()->getMeta(topic);
+                    if (meta.has_value()) {
+                        optional<shared_ptr<repeater::MessageCircle>> circle = context.get_message_circle_composite()->getCircle(topic);
+                        if (circle.has_value()) {
+                            pair<optional<string>, int> message_result = circle.value()->getMessageAndOverlappings(meta->overlapping_turns, meta->index_offset);
+                            if (message_result.first.has_value()) {
+                                // write message to client
+                                if (!this->sendSocketData(client_fd, topic, message_result.first.value())) {
+                                    // write fail, remove subscribed
+                                    this->removeSubscribed(client_ip, client_port);
+
+                                    warn_log("subscriber write fail and remove subscribed for {}:{}", client_ip, client_port);
+                                    break;
+                                }
+
+                                // update record
+                                record.value()->updateMeta(topic, message_result.second);
+                            }
+                        }
+                    }
+                }
+            }
+        });
         write_thread.detach();
 
-        thread read_thread([&] {
+        thread read_thread([this, client_fd, client_ip, client_port, &config, &context] {
+            size_t HEADER_SIZE = 4;
+            size_t MAX_MESSAGE_SIZE = 65536;
+
             // process ping and subscribe
             while (true) {
                 // Step1: read header of topic length
-                std::cout << "read 001" << std::endl;
                 uint32_t topic_length = 0;
                 ssize_t bytes_received = recv(client_fd, &topic_length, HEADER_SIZE, MSG_WAITALL);
-                std::cout << "read 002" << std::endl;
                 if (bytes_received != HEADER_SIZE) {
                     if (bytes_received == 0) {
                         err_log("client of {} disconnected", this->role_);
@@ -29,8 +66,6 @@ namespace subscriber {
                     break;
                 }
                 topic_length = ntohl(topic_length);
-
-                std::cout << "read 003" << std::endl;
 
                 #ifdef OPEN_STD_DEBUG_LOG
                     std::cout << this->role_ << " receive topic length: " << topic_length << std::endl;
@@ -43,8 +78,6 @@ namespace subscriber {
                     err_log("fail to read complete topic from client of {}", this->role_);
                     break;
                 }
-
-                std::cout << "read 004" << std::endl;
 
                 // Step3: read header of main data length
                 uint32_t message_length = 0;
@@ -61,8 +94,6 @@ namespace subscriber {
                 #ifdef OPEN_STD_DEBUG_LOG
                     std::cout << this->role_ << " receive message length: " << message_length << std::endl;
                 #endif
-
-                std::cout << "read 005" << std::endl;
 
                 if (message_length > MAX_MESSAGE_SIZE) {
                     err_log("message from client of {} is too large, which length is {}", this->role_, message_length);
@@ -86,20 +117,6 @@ namespace subscriber {
 
                 // Step5: process main data by message type
                 if (topic_buffer.data() == connection::MESSAGE_OP_TOPIC_PING) {
-                    // // 1. Send topic length (ensure network byte order)
-                    // uint32_t net_value = htonl(connection::MESSAGE_OP_TOPIC_PONG.size()); // Convert to network byte order
-                    // send(client_fd, &net_value, 4, 0);
-
-                    // // 2. Send topic string data
-                    // send(client_fd, connection::MESSAGE_OP_TOPIC_PONG.c_str(), connection::MESSAGE_OP_TOPIC_PONG.size(), 0);
-
-                    // string pong_message = "ok";
-                    // // 3. Send the string length (ensure network byte order)
-                    // uint32_t msg_len = htonl(pong_message.length()); // Send length of string
-                    // send(client_fd, &msg_len, 4, 0);
-
-                    // // 4. Send the string data
-                    // send(client_fd, pong_message.c_str(), pong_message.length(), 0);
 
                     if (this->sendSocketData(client_fd, connection::MESSAGE_OP_TOPIC_PONG, "ok")) {
                         this->refreshKeepAlive(client_ip, client_port);
@@ -114,31 +131,18 @@ namespace subscriber {
                         std::cout << "recevie subscribe json from " << client_ip << ":" << client_port << " " << topic_buffer.data() << "," << message_text << std::endl;
                     #endif
 
-                    // TODO parse subscribe message
+                    vector<string> topics = this->parseSubscribeTopics(message_text);
+                    if (context.get_consume_record_composite()->createRecordIfAbsent(client_ip, client_port, topics, config.max_topic_circle_size)) {
+                        // success
+                        if (this->sendSocketData(client_fd, connection::MESSAGE_OP_TOPIC_SUBSCRIBE, "ok")) {
+                            this->putSubscribed(client_ip, client_port);
+                        }
+                    } else {
+                        // failure
+                        this->sendSocketData(client_fd, connection::MESSAGE_OP_TOPIC_SUBSCRIBE, "fail");
+                    }
 
                 } else {
-                    // Ignore other topics
-                    // string message_text = message_buffer.data();
-                    
-                    // #ifdef OPEN_STD_DEBUG_LOG
-                    //     std::cout << "recevie message json from " << client_ip << ":" << client_port << " " << topic_buffer.data() << "," << message_text << std::endl;
-                    // #endif
-
-                    // if (!context.is_allown_topic(topic_buffer.data())) {
-                    //     warn_log("not allown topic: {}", topic_buffer.data());
-                    //     continue;
-                    // }
-
-                    // if (message_text.size() > config.max_message_body_size) {
-                    //     warn_log("too large message body: {}", message_text);
-                    //     continue;
-                    // }
-
-                    // if (context.get_message_circle_composite()->createCircleIfAbsent(topic_buffer.data(), config.max_topic_circle_size)) {
-                    //     context.get_message_circle_composite()->appendMessageToCircle(topic_buffer.data(), message_text);
-                    // } else {
-                    //     warn_log("cannot create circle for {} {}", topic_buffer.data(), message_text);
-                    // }
                 }
             }
         });
@@ -147,5 +151,44 @@ namespace subscriber {
 
     void SubscriberBootstrap::clearConnectionResource(repeater::GlobalContext &context, string client_ip, int client_port) {
         context.get_consume_record_composite()->removeRecord(client_ip, client_port);
+        this->removeSubscribed(client_ip, client_port);
+    }
+
+    vector<string> SubscriberBootstrap::parseSubscribeTopics(string message_body) {
+
+        vector<string> topics;
+        try {
+            Json::Value json_result;
+            Json::Reader reader;
+            json_result.clear();
+            reader.parse(message_body , json_result);
+            // {"topics": ["T001","T002"]}
+            if (json_result.isMember("topics") && json_result["topics"].isArray()) {
+                for (Json::Value t : json_result["topics"]) {
+                    topics.push_back(t.asString());
+                }
+            }
+        } catch (std::exception &e) {
+            err_log("exception occur while parse json: {}", e.what());
+        }
+
+        return topics;
+
+    }
+
+    void SubscriberBootstrap::putSubscribed(string client_ip, int client_port) {
+        string key = client_ip + ":" + std::to_string(client_port);
+        this->connection_subscribed[key] = true;
+    }
+
+    void SubscriberBootstrap::removeSubscribed(string client_ip, int client_port) {
+        string key = client_ip + ":" + std::to_string(client_port);
+        this->connection_subscribed.erase(key);
+    }
+
+    bool SubscriberBootstrap::isSubscribed(string client_ip, int client_port) {
+        string key = client_ip + ":" + std::to_string(client_port);
+        auto result = this->connection_subscribed.find(key);
+        return result != this->connection_subscribed.end() && result->second == true;
     }
 }

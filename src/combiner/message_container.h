@@ -76,6 +76,9 @@ namespace repeater {
                 CircleMeta meta;
                 this->topic_records_[topic] = meta;
             }
+            for (auto [k, v] : this->topic_records_) {
+                this->topics_.push_back(k);
+            }
         }
         ~ConsumeRecord() {}
 
@@ -83,9 +86,11 @@ namespace repeater {
         string client_ip_;
         int client_port_;
         int max_circle_size_;
+        vector<string> topics_;
         unordered_map<string, CircleMeta> topic_records_;
 
     public:
+        vector<string> getTopics();
         optional<CircleMeta> getMeta(string topic);
         void updateMeta(string topic, int producer_overlapping);
     };

@@ -76,6 +76,10 @@ namespace repeater {
         }
     }
 
+    vector<string> ConsumeRecord::getTopics() {
+        return this->topics_;
+    }
+
     optional<CircleMeta> ConsumeRecord::getMeta(string topic) {
         auto meta = this->topic_records_.find(topic);
         if (meta == this->topic_records_.end()) {
@@ -112,6 +116,10 @@ namespace repeater {
 
     bool ConsumeRecordComposite::createRecordIfAbsent(string client_ip, int client_port, vector<string> topics, int max_circle_size) {
         
+        if (topics.size() == 0) {
+            return false;
+        }
+
         if (this->consume_records_.size() >= this->max_records_size_) {
             return false;
         }

@@ -4,8 +4,8 @@ namespace publisher {
 
     void PublisherBootstrap::acceptHandle(repeater::RepeaterConfig &config, repeater::GlobalContext &context, int client_fd, string client_ip, int client_port) {
 
-        const size_t HEADER_SIZE = 4;
-        const size_t MAX_MESSAGE_SIZE = 65536;
+        size_t HEADER_SIZE = 4;
+        size_t MAX_MESSAGE_SIZE = 65536;
 
         while (true) {
             // Step1: read header of topic length

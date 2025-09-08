@@ -1,5 +1,5 @@
 # -*- coding: utf8 -*-
-__author__ = 'dictwang'
+__author__ = 'wangqiang'
 
 import socket
 import time
@@ -39,9 +39,7 @@ class MessageSubscribe:
         send_data += body_data
 
         try:
-            print("before send all")
             self._client_fd.sendall(send_data)
-            print("after send all")
 
             topic_length_data = self._client_fd.recv(4)
             if len(topic_length_data) < 4:
@@ -116,7 +114,6 @@ class MessageSubscribe:
         t.start()
 
     def _send_ping_text(self):
-        print(101)
         send_data: bytes = int.to_bytes(4, length=4, byteorder="big")
         topic_data = MessageTopic_Ping.encode("utf-8")
         send_data += topic_data
@@ -125,17 +122,13 @@ class MessageSubscribe:
         send_data += int.to_bytes(len(body_data), length=4, byteorder="big")
         send_data += body_data
 
-        print(102)
-
         while True:
             if not self._connected:
                 break
             time.sleep(10)
 
             try:
-                print("before send ping")
                 self._client_fd.sendall(send_data)
-                print("after send ping")
 
                 topic_length_data = self._client_fd.recv(4)
                 if len(topic_length_data) < 4:
@@ -185,10 +178,10 @@ if __name__ == "__main__":
     subscriber = MessageSubscribe("127.0.0.1", 20001)
     subscriber.connect()
 
-    # # subscribe
-    # time.sleep(5)
-    # topics = ["T001", "T002"]
-    # result = subscriber.subscribe(topics)
+    # subscribe
+    time.sleep(5)
+    topics = ["T001", "T002"]
+    result = subscriber.subscribe(topics)
 
     while True:
         pass
