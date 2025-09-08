@@ -4,8 +4,8 @@
     "logger_level": 2,
     "logger_max_files": 7,
 
-    "max_topic_number": 20,
-    "max_topic_circle_size": 1024,
+    "max_topic_number": 10,
+    "max_topic_circle_size": 16,
     "max_message_body_size": 4096,
     "max_connection_idle_second": 60,
 

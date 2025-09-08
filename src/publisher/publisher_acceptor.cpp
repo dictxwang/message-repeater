@@ -116,4 +116,8 @@ namespace publisher {
 
         close(client_fd);
     }
+
+    void PublisherBootstrap::clearConnectionResource(repeater::GlobalContext &context, string client_ip, int client_port) {
+        // nothing need to clear
+    }
 }

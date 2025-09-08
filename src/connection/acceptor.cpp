@@ -180,6 +180,10 @@ namespace connection {
         close(client_fd);
     }
 
+    void AbstractBootstrap::clearConnectionResource(repeater::GlobalContext &context, string client_ip, int client_port) {
+        // Base implementation - derived classes should override
+    }
+
     bool AbstractBootstrap::sendSocketData(int client_fd, string topic, string message) {
         
         // // 1. Send topic length (ensure network byte order)
@@ -199,14 +203,14 @@ namespace connection {
 
         vector<char> buffer;
         // Serialize string length
-        size_t topic_length = topic.length();
+        uint32_t topic_length = htonl(topic.length());
         buffer.insert(buffer.end(), reinterpret_cast<const char*>(&topic_length),
                     reinterpret_cast<const char*>(&topic_length) + sizeof(topic_length));
         // Serialize string data
         buffer.insert(buffer.end(), topic.begin(), topic.end());
 
         // Serialize string length
-        size_t message_length = message.length();
+        uint32_t message_length = htonl(message.length());
         buffer.insert(buffer.end(), reinterpret_cast<const char*>(&message_length),
                     reinterpret_cast<const char*>(&message_length) + sizeof(message_length));
         // Serialize string data
@@ -216,17 +220,17 @@ namespace connection {
         
         if (bytes_sent < 0) {
             #ifdef OPEN_STD_DEBUG_LOG
-                std::cout << "Error sending data or timeout occurred" << std::endl;
+                std::cout << "error sending data or timeout occurred" << std::endl;
             #endif
             return false;
         } else if (bytes_sent == 0) {
             #ifdef OPEN_STD_DEBUG_LOG
-                std::cout << "No data sent (possibly due to timeout or closed connection)" << std::endl;
+                std::cout << "no data sent (possibly due to timeout or closed connection)" << std::endl;
             #endif
             return false;
         } else {
             #ifdef OPEN_STD_DEBUG_LOG
-                std::cout << "Sent " << bytes_sent << " bytes" << std::endl;
+                std::cout << "server sent " << bytes_sent << " bytes" << std::endl;
             #endif
         }
         return true;

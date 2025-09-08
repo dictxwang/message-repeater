@@ -13,6 +13,7 @@ namespace publisher {
     
     protected:
         void acceptHandle(repeater::RepeaterConfig &config, repeater::GlobalContext &context, int client_fd, string client_ip, int client_port);
+        void clearConnectionResource(repeater::GlobalContext &context, string client_ip, int client_port);
     };
 }
 

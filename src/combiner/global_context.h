@@ -18,7 +18,7 @@ namespace repeater {
 
     public:
         void init(RepeaterConfig& config);
-        MessageCircleComposite& get_message_circle_composite();
+        shared_ptr<MessageCircleComposite> get_message_circle_composite();
     };
 }
 #endif
