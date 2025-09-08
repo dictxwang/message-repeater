@@ -81,7 +81,7 @@ class MessageSubscribe:
 
         return False
 
-    def read_message(self) -> (bool, bool, str, str):
+    def read_message(self) -> (bool, bool, str, str): # type: ignore
         if not self._connected:
             return False, False, "", ""
 
