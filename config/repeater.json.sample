@@ -7,7 +7,11 @@
     "max_topic_number": 10,
     "max_topic_circle_size": 16,
     "max_message_body_size": 4096,
-    "max_connection_idle_second": 60,
+    "max_connection_idle_second": 30,
+
+    "allown_topics": [
+        "*"
+    ],
 
     "socket_write_timeout_second": 5,
 

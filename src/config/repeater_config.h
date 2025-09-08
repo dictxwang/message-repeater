@@ -23,6 +23,7 @@ namespace repeater {
         int max_message_body_size;
         int max_connection_idle_second;
 
+        vector<string> allown_topics;
         int socket_write_timeout_second;
 
         bool enable_layer_subscribe;

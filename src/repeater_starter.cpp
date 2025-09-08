@@ -5,6 +5,7 @@
 #include "logger/logger.h"
 #include "combiner/global_context.h"
 #include "publisher/publisher_acceptor.h"
+#include "subscriber/subscriber_acceptor.h"
 
 int main(int argc, char const *argv[]) {
 
@@ -32,6 +33,9 @@ int main(int argc, char const *argv[]) {
     publisherBootstrap.start(config, global_context);
 
     // init and start subscriber bootstrap
+    subscriber::SubscriberBootstrap subscriberBootstrap;
+    subscriberBootstrap.init(connection::SERVER_ROLE_SUBSCRIBER, config.subscriber_listen_address, config.subscriber_listen_port, config.subscriber_max_connection);
+    subscriberBootstrap.start(config, global_context);
 
     // init and start layer subscribe
 

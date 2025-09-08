@@ -16,6 +16,10 @@ namespace repeater {
         this->max_message_body_size = this->doc_["max_message_body_size"].asInt();
         this->max_connection_idle_second = this->doc_["max_connection_idle_second"].asInt();
 
+        for (Json::Value topic : this->doc_["allown_topics"]) {
+            this->allown_topics.push_back(topic.asString());
+        }
+        
         this->socket_write_timeout_second = this->doc_["socket_write_timeout_second"].asInt();
 
         this->enable_layer_subscribe = this->doc_["enable_layer_subscribe"].asBool();

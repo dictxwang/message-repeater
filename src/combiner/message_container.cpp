@@ -75,4 +75,84 @@ namespace repeater {
             return circle->second;
         }
     }
+
+    optional<CircleMeta> ConsumeRecord::getMeta(string topic) {
+        auto meta = this->topic_records_.find(topic);
+        if (meta == this->topic_records_.end()) {
+            return nullopt;
+        } else {
+            CircleMeta result;
+            result.index_offset = meta->second.index_offset;
+            result.overlapping_turns = meta->second.overlapping_turns;
+            return result;
+        }
+    }
+
+    void ConsumeRecord::updateMeta(string topic, int producer_overlapping) {
+        auto meta = this->topic_records_.find(topic);
+        if (meta == this->topic_records_.end()) {
+            // not supported topic
+        } else {
+            if (meta->second.overlapping_turns > producer_overlapping) {
+                meta->second.overlapping_turns = producer_overlapping;
+            }
+            if (meta->second.index_offset + 1 >= this->max_circle_size_) {
+                meta->second.index_offset = 0;
+            } else {
+                meta->second.index_offset += 1;
+            }
+
+            this->topic_records_[topic] = meta->second;
+        }
+    }
+
+    void ConsumeRecordComposite::init(int max_records_size) {
+        this->max_records_size_ = max_records_size;
+    }
+
+    bool ConsumeRecordComposite::createRecordIfAbsent(string client_ip, int client_port, vector<string> topics, int max_circle_size) {
+        
+        if (this->consume_records_.size() >= this->max_records_size_) {
+            return false;
+        }
+
+        string key = client_ip + ":" + std::to_string(client_port);
+
+        std::unique_lock<std::shared_mutex> w_lock(this->rw_lock_);
+        auto record = this->consume_records_.find(key);
+        if (record == this->consume_records_.end()) {
+            shared_ptr<ConsumeRecord> c_record = std::make_shared<ConsumeRecord>(client_ip, client_port, topics, max_circle_size);
+            this->consume_records_[key] = c_record;
+        }
+        
+        #ifdef OPEN_STD_DEBUG_LOG
+            std::cout << "after create consume records size is " << this->consume_records_.size() << std::endl;
+        #endif
+        
+        return true;
+    }
+
+    optional<shared_ptr<ConsumeRecord>> ConsumeRecordComposite::getRecord(string client_ip, int client_port) {
+
+        string key = client_ip + ":" + std::to_string(client_port);
+        auto record = this->consume_records_.find(key);
+        if (record == this->consume_records_.end()) {
+            return nullopt;
+        } else {
+            return record->second;
+        }
+    }
+
+    void ConsumeRecordComposite::removeRecord(string client_ip, int client_port) {
+
+        string key = client_ip + ":" + std::to_string(client_port);
+        auto record = this->consume_records_.find(key);
+        if (record != this->consume_records_.end()) {
+            this->consume_records_.erase(key);
+
+            #ifdef OPEN_STD_DEBUG_LOG
+                std::cout << "after remove consume records size is " << this->consume_records_.size() << std::endl;
+            #endif
+        }
+    }
 }

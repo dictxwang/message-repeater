@@ -155,7 +155,7 @@ namespace connection {
                 }
             }
             for (pair<string, int> p : idle_expired_keys) {
-                string key = p.first + std::to_string(p.second);
+                string key = p.first + ":" + std::to_string(p.second);
                 this->client_connections_.erase(key);
                 info_log("{} close and remove connection {}", this->role_, key);
 
@@ -166,6 +166,10 @@ namespace connection {
             #ifdef OPEN_STD_DEBUG_LOG
                 std::cout << this->role_ << " after alive detetion remain connections size " << this->client_connections_.size() << std::endl;
             #endif
+
+            if (idle_expired_keys.size() > 0) {
+                info_log("{} after alive detection remain {} connections", this->role_, this->client_connections_.size());
+            }
 
             w_lock.unlock();
         }

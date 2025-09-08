@@ -63,6 +63,49 @@ namespace repeater {
         bool appendMessageToCircle(string topic, string message);
         optional<shared_ptr<MessageCircle>> getCircle(string topic);
     };
+
+
+    class ConsumeRecord {
+    public:
+        ConsumeRecord(string client_ip, int client_port, vector<string> topics, int max_circle_size) {
+            this->client_ip_ = client_ip;
+            this->client_port_ = client_port;
+            this->max_circle_size_ = max_circle_size;
+            for (string topic : topics) {
+                CircleMeta meta;
+                this->topic_records_[topic] = meta;
+            }
+        }
+        ~ConsumeRecord() {}
+
+    private:
+        string client_ip_;
+        int client_port_;
+        int max_circle_size_;
+        unordered_map<string, CircleMeta> topic_records_;
+
+    public:
+        optional<CircleMeta> getMeta(string topic);
+        void updateMeta(string topic, int producer_overlapping);
+    };
+
+    class ConsumeRecordComposite {
+    public:
+        ConsumeRecordComposite() {}
+        ~ConsumeRecordComposite() {}
+    
+    private:
+        int max_records_size_;
+        unordered_map<string, shared_ptr<ConsumeRecord>> consume_records_;
+        shared_mutex rw_lock_;
+    
+    public:
+        void init(int max_records_size);
+        bool createRecordIfAbsent(string client_ip, int client_port, vector<string> topics, int max_circle_size);
+        optional<shared_ptr<ConsumeRecord>> getRecord(string client_ip, int client_port);
+        void removeRecord(string client_ip, int client_port);
+    };
+
 }
 
 #endif
