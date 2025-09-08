@@ -1,5 +1,5 @@
 # -*- coding: utf8 -*-
-__author__ = 'wangqiang'
+__author__ = 'dictwang'
 
 import socket
 import time

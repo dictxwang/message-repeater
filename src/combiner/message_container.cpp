@@ -20,6 +20,8 @@ namespace repeater {
     }
 
     pair<optional<string>, int> MessageCircle::getMessageAndOverlappings(int subscribe_overlappings, int index) {
+        
+        // std::cout << "subscribe_overlappings: " << subscribe_overlappings << ", index: " << index << ",this.turn: " << this->meta_.overlapping_turns << ",this.index: " << this->meta_.index_offset << std::endl;
         if (subscribe_overlappings > this->meta_.overlapping_turns) {
             return std::make_pair(nullopt, this->meta_.overlapping_turns);
         } else if (subscribe_overlappings == this->meta_.overlapping_turns && index >= this->meta_.index_offset) {

@@ -1,5 +1,5 @@
 # -*- coding: utf8 -*-
-__author__ = 'wangqiang'
+__author__ = 'dictwang'
 
 import socket
 import time
@@ -18,6 +18,7 @@ class MessageSubscribe:
         self._server_port = server_port
         self._client_fd = None
         self._connected = False
+        self._subscribed = False
 
     def connect(self):
         self._create_connection()
@@ -30,8 +31,8 @@ class MessageSubscribe:
         topics = ",".join(list(map(lambda x : "\"" + x + "\"", topics)))
         body = "{\"topics\": [" + topics + "]}"
 
-        send_data: bytes = int.to_bytes(4, length=4, byteorder="big")
-        topic_data = MessageTopic_Ping.encode("utf-8")
+        send_data: bytes = int.to_bytes(len(MessageTopic_Subscribe), length=4, byteorder="big")
+        topic_data = MessageTopic_Subscribe.encode("utf-8")
         send_data += topic_data
 
         body_data = body.encode("utf-8")
@@ -71,6 +72,7 @@ class MessageSubscribe:
             if text.lower().find(Pong_Success_Text) >= 0:
                 # success
                 print(f"receive subscribe: {text}")
+                self._subscribed = True
                 return True
             else:
                 return False
@@ -79,22 +81,39 @@ class MessageSubscribe:
 
         return False
 
-    def read_message(self, topic_name, message_json) -> bool:
+    def read_message(self) -> (bool, bool, str, str):
         if not self._connected:
-            return False
+            return False, False, "", ""
 
-        topic_name_data = topic_name.encode("utf-8")
-        send_data: bytes = int.to_bytes(len(topic_name_data), length=4, byteorder="big")
-        send_data += topic_name_data
-        body_data = message_json.encode("utf-8")
-        send_data += int.to_bytes(len(body_data), length=4, byteorder="big")
-        send_data += body_data
+        if not self._subscribed:
+            return True, False, "", ""
 
-        try:
-            self._client_fd.sendall(send_data)
-        except Exception as e:
-            return False
-        return True
+        topic_length_data = self._client_fd.recv(4)
+        if len(topic_length_data) < 4:
+            return False, False, "", ""
+        topic_length = int.from_bytes(topic_length_data, 'big')
+
+        if topic_length < 1:
+            return False, False, "", ""
+
+        topic_data = self._client_fd.recv(topic_length)
+        if len(topic_data) <= 0:
+            return False, False, "", ""
+
+        topic_name = topic_data.decode("utf-8")
+
+        body_length_data = self._client_fd.recv(4)
+        if len(body_length_data) < 4:
+            return False, False, "", ""
+        body_length = int.from_bytes(body_length_data, 'big')
+        if body_length <= 0:
+            return False, False, "", ""
+
+        body_data = self._client_fd.recv(body_length)
+        if len(body_data) <= 0:
+            return False, False, "", ""
+        text = body_data.decode("utf-8")
+        return True, True, topic_name, text
 
     def _create_connection(self):
         self._client_fd = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -183,5 +202,9 @@ if __name__ == "__main__":
     topics = ["T001", "T002"]
     result = subscriber.subscribe(topics)
 
+    # read message
     while True:
-        pass
+        connected, subscribed, topic_name, message = subscriber.read_message()
+        if not connected or not subscribed:
+            break
+        print(f"read topic: {topic_name}, message: {message}")

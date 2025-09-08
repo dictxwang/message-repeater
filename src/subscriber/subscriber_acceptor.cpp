@@ -23,12 +23,15 @@ namespace subscriber {
                 }
 
                 for (string topic : record.value()->getTopics()) {
+
                     optional<repeater::CircleMeta> meta = record.value()->getMeta(topic);
                     if (meta.has_value()) {
+
                         optional<shared_ptr<repeater::MessageCircle>> circle = context.get_message_circle_composite()->getCircle(topic);
                         if (circle.has_value()) {
                             pair<optional<string>, int> message_result = circle.value()->getMessageAndOverlappings(meta->overlapping_turns, meta->index_offset);
                             if (message_result.first.has_value()) {
+
                                 // write message to client
                                 if (!this->sendSocketData(client_fd, topic, message_result.first.value())) {
                                     // write fail, remove subscribed

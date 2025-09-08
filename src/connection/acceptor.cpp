@@ -234,7 +234,16 @@ namespace connection {
         // Serialize string data
         buffer.insert(buffer.end(), message.begin(), message.end());
 
-        ssize_t bytes_sent = send(client_fd, buffer.data(), buffer.size(), 0);
+        ssize_t bytes_sent = 0;
+        
+        try {
+            send(client_fd, buffer.data(), buffer.size(), 0);
+        } catch (Exceptioin &e) {
+            #ifdef OPEN_STD_DEBUG_LOG
+                std::cout << "exception sending data occurred: " << e.what() << std::endl;
+            #endif
+            return false;
+        }
         
         if (bytes_sent < 0) {
             #ifdef OPEN_STD_DEBUG_LOG
