@@ -160,11 +160,13 @@ int main(int argc, char const *argv[]) {
         string body = common_tools::serialize_json_value(body_json);
         std::cout << "layer replay subscribe message body: " << body << std::endl;
 
+        std::cout << "0001" << std::endl;
         if (!send_socket_data(client_fd, "subscribe", body)) {
             std::cout << "fail to send subscribe message to layer replay" << std::endl;
             close(client_fd);
             continue;
         }
+        std::cout << "0002" << std::endl;
 
         // 4. Read subscribe response
         auto subscribe_resp = read_socket_frame(client_fd);
@@ -174,11 +176,14 @@ int main(int argc, char const *argv[]) {
             continue;
         }
 
+        std::cout << "0003" << std::endl;
         if (subscribe_resp.value().first != "subscribe") {
             std::cout << "not subscribe topic" << std::endl;
             close(client_fd);
             continue;
         }
+
+        std::cout << "0004" << std::endl;
         if (subscribe_resp.value().second.find("ok") == std::string::npos) {
             // fail
             std::cout << "fail to subscribe layer replay: " << subscribe_resp.value().second << std::endl;

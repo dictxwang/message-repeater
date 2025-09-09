@@ -80,8 +80,8 @@ target_link_libraries(${STARTER_TEST}
 
     ${_LIB_SPDLOG}
     json
-    CURL::libcurl
-    OpenSSL::SSL OpenSSL::Crypto
+    # CURL::libcurl
+    # OpenSSL::SSL OpenSSL::Crypto
     config
 )
 
