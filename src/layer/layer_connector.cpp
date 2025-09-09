@@ -112,19 +112,38 @@ namespace layer {
                 info_log("success to subscribe layer replay: {}", subscribe_address);
             }
 
-            uint64_t latest_ping_time = common_tools::get_current_epoch();
-            // 5. Start reading loop
-            while (true) {
-                uint64_t now = common_tools::get_current_epoch();
-                if (latest_ping_time + 10 < now) {
-                    // send ping
-                    bool ping_result = send_socket_data(client_fd, connection::MESSAGE_OP_TOPIC_PING, "ok");
-                    if (!ping_result) {
-                        warn_log("fail to send ping to layer replay: {}", subscribe_address);
+            bool socket_disconnected = false;
+            // 5. Start ping thread
+            thread ping_thread([client_fd, &subscribe_address, &socket_disconnected] {
+                bool is_disconnected = false;
+
+                while (true) {
+                    for (int i = 0; i < 20; i++) {
+                        this_thread::sleep_for(chrono::milliseconds(500));
+                        if (socket_disconnected) {
+                            is_disconnected = true;
+                            break;
+                        }
+                    }
+                    if (is_disconnected) {
                         break;
                     }
-                    latest_ping_time = now;
+
+                    // send ping
+                    bool send_result = send_socket_data(client_fd, connection::MESSAGE_OP_TOPIC_PING, "ok");
+                    if (!send_result) {
+                        warn_log("fail to send ping to layer replay: {}", subscribe_address);
+                        socket_disconnected = true;
+                        break;
+                    }
                 }
+                info_log("ping thread exit for layer replay: {}", subscribe_address);
+            });
+            ping_thread.detach();
+
+            uint64_t latest_ping_time = common_tools::get_current_epoch();
+            // 6. Start reading loop
+            while (true) {
 
                 auto frame = read_socket_frame(client_fd);
                 if (!frame.has_value()) {
@@ -151,6 +170,7 @@ namespace layer {
                 }
             }
 
+            socket_disconnected = true;
             close(client_fd);
         }
     }
