@@ -3,6 +3,8 @@
 
 using namespace std;
 
-namespace layer {}
+namespace layer {
+    
+}
 
 #endif
