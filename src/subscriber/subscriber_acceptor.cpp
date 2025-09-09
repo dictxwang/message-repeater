@@ -9,6 +9,7 @@ namespace subscriber {
         bool connection_alived = true;
         thread write_thread([this, client_fd, client_ip, client_port, &config, &context, &connection_alived] {
             while (true) {
+                this_thread::sleep_for(chrono::microseconds(1));
                 if (!connection_alived) {
                     break;
                 }
