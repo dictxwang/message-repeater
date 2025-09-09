@@ -28,7 +28,7 @@ include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}
     include
     ${CUSTOM_INCLUDE_DIR}
-    ../include/
+    ../src/
 )
 
 link_directories(
@@ -37,15 +37,20 @@ link_directories(
     ../build/
 )
 
-# Find OpenSSL
-find_package(OpenSSL REQUIRED)
-# Find Curl
-find_package(CURL REQUIRED)
 
-# add_executable("sample_binance_rest" "src/sample_binance_rest.cpp")
-# target_link_libraries("sample_binance_rest"
-#     exchangecpp  
-#     CURL::libcurl
-#     OpenSSL::SSL OpenSSL::Crypto
-# )
+# json
+FILE(GLOB_RECURSE LIB_JSON_SRC RELATIVE ${CMAKE_SOURCE_DIR}
+    "../src/json/*")
+add_library(json ${LIB_JSON_SRC})
+
+# util
+FILE(GLOB_RECURSE LIB_UTIL_SRC RELATIVE ${CMAKE_SOURCE_DIR}
+    "../src/util/*")
+add_library(util ${LIB_UTIL_SRC})
+
+add_executable("sample_subscriber" "src/sample_subscriber.cpp")
+target_link_libraries("sample_subscriber"
+    json
+    util
+)
 

@@ -110,8 +110,8 @@ add_executable(${STARTER_REPEATER} "src/repeater_starter.cpp")
 target_link_libraries(${STARTER_REPEATER}
     ${_LIB_SPDLOG}
     json
-    CURL::libcurl
-    OpenSSL::SSL OpenSSL::Crypto
+    # CURL::libcurl
+    # OpenSSL::SSL OpenSSL::Crypto
     config
     connection
     publisher
