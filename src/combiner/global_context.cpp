@@ -11,7 +11,9 @@ namespace repeater {
                 this->allown_all_topics = true;
                 continue;
             }
-            this->allown_topics.insert(topic);
+            if (!this->is_reserved_topic(topic)) {
+                this->allown_topics.insert(topic);
+            }
         }
 
         this->message_circle_composite_ = std::make_shared<MessageCircleComposite>();
@@ -30,6 +32,10 @@ namespace repeater {
     }
 
     bool GlobalContext::is_allown_topic(string topic) {
-        return this->allown_all_topics || this->allown_topics.find(topic) != this->allown_topics.end();
+        return !this->is_reserved_topic(topic) && (this->allown_all_topics || this->allown_topics.find(topic) != this->allown_topics.end());
+    }
+
+    bool GlobalContext::is_reserved_topic(string topic) {
+        return topic == "ping" || topic == "pong" || topic == "subscribe" || topic == "error";
     }
 }

@@ -25,6 +25,7 @@ namespace repeater {
         shared_ptr<MessageCircleComposite> get_message_circle_composite();
         shared_ptr<ConsumeRecordComposite> get_consume_record_composite();
         bool is_allown_topic(string topic);
+        bool is_reserved_topic(string topic);
     };
 }
 #endif
