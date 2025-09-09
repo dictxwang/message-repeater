@@ -2,6 +2,7 @@
 #define _SUBSCRIBER_ACCEPTOR_H_
 
 #include <iostream>
+#include <set>
 #include "connection/acceptor.h"
 #include "json/json.h"
 
@@ -19,7 +20,7 @@ namespace subscriber {
         void acceptHandle(repeater::RepeaterConfig &config, repeater::GlobalContext &context, int client_fd, string client_ip, int client_port);
         void clearConnectionResource(repeater::GlobalContext &context, string client_ip, int client_port);
 
-        vector<string> parseSubscribeTopics(string message_body);
+        vector<string> parseSubscribeTopics(repeater::GlobalContext &context, string message_body);
 
         void putSubscribed(string client_ip, int client_port);
         void removeSubscribed(string client_ip, int client_port);

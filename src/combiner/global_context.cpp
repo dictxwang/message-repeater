@@ -7,10 +7,11 @@ namespace repeater {
     void GlobalContext::init(RepeaterConfig& config) {
 
         for (string topic : config.allown_topics) {
-            this->allown_topics.insert(topic);
             if (topic == "*") {
                 this->allown_all_topics = true;
+                continue;
             }
+            this->allown_topics.insert(topic);
         }
 
         this->message_circle_composite_ = std::make_shared<MessageCircleComposite>();

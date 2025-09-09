@@ -9,7 +9,7 @@ MessageTopic_Ping = "ping"
 MessageTopic_Pong = "pong"
 MessageTopic_Subscribe = "subscribe"
 
-Pong_Success_Text = "ok"
+Message_Success_Text = "ok"
 
 
 class MessageSubscribe:
@@ -23,6 +23,16 @@ class MessageSubscribe:
     def connect(self):
         self._create_connection()
         self._start_heartbeat()
+
+    def close(self):
+        if self._client_fd:
+            try:
+                self._client_fd.close()
+            except Exception as exp:
+                pass
+        self._client_fd = None
+        self._connected = False
+        self._subscribed = False
 
     def subscribe(self, topics) -> bool:
         if not self._connected:
@@ -69,24 +79,22 @@ class MessageSubscribe:
             if len(body_data) <= 0:
                 return False
             text = body_data.decode("utf-8")
-            if text.lower().find(Pong_Success_Text) >= 0:
+            if text.lower().find(Message_Success_Text) >= 0:
                 # success
-                print(f"receive subscribe: {text}")
+                print(f"subscribe success and message is : {text}")
                 self._subscribed = True
                 return True
             else:
+                print(f"subscribe failure and message is : {text}")
                 return False
         except Exception as e:
             print(f"An error occurred: {e}")
 
         return False
 
-    def read_message(self) -> (bool, bool, str, str): # type: ignore
+    def read_message(self) -> (bool, bool, str, str):
         if not self._connected:
             return False, False, "", ""
-
-        if not self._subscribed:
-            return True, False, "", ""
 
         topic_length_data = self._client_fd.recv(4)
         if len(topic_length_data) < 4:
@@ -148,63 +156,34 @@ class MessageSubscribe:
 
             try:
                 self._client_fd.sendall(send_data)
-
-                topic_length_data = self._client_fd.recv(4)
-                if len(topic_length_data) < 4:
-                    break
-                topic_length = int.from_bytes(topic_length_data, 'big')
-
-                if topic_length < 1:
-                    continue
-
-                topic_data = self._client_fd.recv(topic_length)
-                if len(topic_data) <= 0:
-                    break
-
-                topic_name = topic_data.decode("utf-8")
-                if topic_name != MessageTopic_Pong:
-                    continue
-
-                body_length_data = self._client_fd.recv(4)
-                if len(body_length_data) < 4:
-                    break
-                body_length = int.from_bytes(body_length_data, 'big')
-                if body_length <= 0:
-                    continue
-
-                body_data = self._client_fd.recv(body_length)
-                if len(body_data) <= 0:
-                    break
-                text = body_data.decode("utf-8")
-                if text.lower().find(Pong_Success_Text) >= 0:
-                    # success
-                    print(f"receive pong: {text}")
-                    pass
-                else:
-                    # fail
-                    break
-
             except Exception as e:
                 print(f"An error occurred: {e}")
                 break
 
-        self._client_fd.close()
-        self._connected = False
+        self.close()
         print("tcp connection closed")
 
 
 if __name__ == "__main__":
+
     subscriber = MessageSubscribe("127.0.0.1", 20001)
-    subscriber.connect()
-
-    # subscribe
-    time.sleep(5)
     topics = ["T001", "T002"]
-    result = subscriber.subscribe(topics)
 
-    # read message
     while True:
-        connected, subscribed, topic_name, message = subscriber.read_message()
-        if not connected or not subscribed:
-            break
-        print(f"read topic: {topic_name}, message: {message}")
+        subscriber.connect()
+
+        # before subscribe, wait for connection is ready
+        time.sleep(2)
+        result = subscriber.subscribe(topics)
+        if not result:
+            subscriber.close()
+            print("not subscribe")
+            continue
+
+        time.sleep(1)
+        while True:
+            connected, subscribed, topic_name, message = subscriber.read_message()
+            if not connected or not subscribed:
+                subscriber.close()
+                break
+            print(f"read topic: {topic_name}, message: {message}")

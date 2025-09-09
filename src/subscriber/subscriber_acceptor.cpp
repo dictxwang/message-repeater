@@ -135,18 +135,23 @@ namespace subscriber {
                         std::cout << "recevie subscribe json from " << client_ip << ":" << client_port << " " << topic_buffer.data() << "," << message_text << std::endl;
                     #endif
 
-                    vector<string> topics = this->parseSubscribeTopics(message_text);
-                    if (context.get_consume_record_composite()->createRecordIfAbsent(client_ip, client_port, topics, config.max_topic_circle_size)) {
-                        // success
-                        if (this->sendSocketData(client_fd, connection::MESSAGE_OP_TOPIC_SUBSCRIBE, "ok")) {
-                            this->putSubscribed(client_ip, client_port);
-                        }
+                    vector<string> topics = this->parseSubscribeTopics(context, message_text);
+                    if (topics.size() == 0) {
+                        // topic not support
+                        this->sendSocketData(client_fd, connection::MESSAGE_OP_TOPIC_SUBSCRIBE, "topic is empty or not support");
                     } else {
-                        // failure
-                        this->sendSocketData(client_fd, connection::MESSAGE_OP_TOPIC_SUBSCRIBE, "fail");
+                        if (context.get_consume_record_composite()->createRecordIfAbsent(client_ip, client_port, topics, config.max_topic_circle_size)) {
+                            // success
+                            if (this->sendSocketData(client_fd, connection::MESSAGE_OP_TOPIC_SUBSCRIBE, "ok")) {
+                                this->putSubscribed(client_ip, client_port);
+                            }
+                        } else {
+                            // failure
+                            this->sendSocketData(client_fd, connection::MESSAGE_OP_TOPIC_SUBSCRIBE, "fail subscribe");
+                        }
                     }
-
                 } else {
+                    // Ignore other topics
                 }
             }
 
@@ -161,9 +166,9 @@ namespace subscriber {
         this->removeSubscribed(client_ip, client_port);
     }
 
-    vector<string> SubscriberBootstrap::parseSubscribeTopics(string message_body) {
+    vector<string> SubscriberBootstrap::parseSubscribeTopics(repeater::GlobalContext &context, string message_body) {
 
-        vector<string> topics;
+        set<string> topics;
         try {
             Json::Value json_result;
             Json::Reader reader;
@@ -172,14 +177,21 @@ namespace subscriber {
             // {"topics": ["T001","T002"]}
             if (json_result.isMember("topics") && json_result["topics"].isArray()) {
                 for (Json::Value t : json_result["topics"]) {
-                    topics.push_back(t.asString());
+                    if (context.is_allown_topic(t.asString())) {
+                        topics.insert(t.asString());
+                    }
                 }
             }
         } catch (std::exception &e) {
             err_log("exception occur while parse json: {}", e.what());
         }
 
-        return topics;
+        vector<string> result;
+        for (string t : topics) {
+            result.push_back(t);
+        }
+
+        return result;
 
     }
 

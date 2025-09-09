@@ -122,11 +122,13 @@ if __name__ == "__main__":
     publisher.connect()
 
     # send message
+    message_val = 0
     while True:
         time.sleep(5)
 
-        topic = "T001"
-        message = "{\"side\": \"BUY\"}"
+        topic = "T002"
+        message_val += 1
+        message = "{\"side\": \"BUY\", \"val\": \""+ str(message_val) +"\"}"
         result = publisher.send_message(topic, message)
         if not result:
             # reconnect

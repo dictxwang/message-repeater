@@ -16,7 +16,7 @@ namespace repeater {
     
     private:
         set<string> allown_topics;
-        bool allown_all_topics;
+        bool allown_all_topics = false;
         shared_ptr<MessageCircleComposite> message_circle_composite_;
         shared_ptr<ConsumeRecordComposite> consume_record_composite_;
 

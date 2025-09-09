@@ -107,6 +107,13 @@ namespace connection {
                 return;
             }
 
+            int optval_nodelay = 1;
+            if (setsockopt(client_fd, IPPROTO_TCP, TCP_NODELAY, &optval_nodelay, sizeof(optval_nodelay)) < 0) {
+                warn_log("{} fail to set tcp_nodelay for client", this->role_);
+                close(client_fd);
+                return;
+            }
+
             // Get client info
             char client_ip[INET_ADDRSTRLEN];
             inet_ntop(AF_INET, &client_addr.sin_addr, client_ip, INET_ADDRSTRLEN);
