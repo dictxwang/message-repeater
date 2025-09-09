@@ -29,7 +29,7 @@ namespace subscriber {
                         optional<shared_ptr<repeater::MessageCircle>> circle = context.get_message_circle_composite()->getCircle(topic);
                         if (circle.has_value()) {
                             pair<optional<string>, int> message_result = circle.value()->getMessageAndOverlappings(meta->overlapping_turns, meta->index_offset);
-                            if (message_result.first.has_value()) {
+                            if (message_result.first.has_value() && message_result.first.value().size() > 0) {
 
                                 // write message to client
                                 if (!this->sendSocketData(client_fd, topic, message_result.first.value())) {
@@ -144,6 +144,7 @@ namespace subscriber {
                             // success
                             if (this->sendSocketData(client_fd, connection::MESSAGE_OP_TOPIC_SUBSCRIBE, "ok")) {
                                 this->putSubscribed(client_ip, client_port);
+                                info_log("client success to subscribe: client_ip={},client_port={}", client_ip, client_port);
                             }
                         } else {
                             // failure

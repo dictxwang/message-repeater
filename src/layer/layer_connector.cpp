@@ -21,7 +21,7 @@ namespace layer {
         // prepare messsage circle
         for (string topic : context.get_layer_subscribe_topics()) {
             bool result = context.get_message_circle_composite()->createCircleIfAbsent(topic, config.max_topic_circle_size);
-            if (result) {
+            if (!result) {
                 warn_log("fail to create circle for topic {}", topic);
             } else {
                 warn_log("success to create circle for topic {}", topic);
@@ -108,12 +108,23 @@ namespace layer {
                 warn_log("fail to subscribe layer replay: {}", subscribe_resp.value().second);
                 close(client_fd);
                 continue;
+            } else {
+                info_log("success to subscribe layer replay: {}", subscribe_address);
             }
 
             uint64_t latest_ping_time = common_tools::get_current_epoch();
             // 5. Start reading loop
             while (true) {
-                // TODO send ping
+                uint64_t now = common_tools::get_current_epoch();
+                if (latest_ping_time + 10 < now) {
+                    // send ping
+                    bool ping_result = send_socket_data(client_fd, connection::MESSAGE_OP_TOPIC_PING, "ok");
+                    if (!ping_result) {
+                        warn_log("fail to send ping to layer replay: {}", subscribe_address);
+                        break;
+                    }
+                    latest_ping_time = now;
+                }
 
                 auto frame = read_socket_frame(client_fd);
                 if (!frame.has_value()) {

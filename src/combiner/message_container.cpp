@@ -21,12 +21,26 @@ namespace repeater {
 
     pair<optional<string>, int> MessageCircle::getMessageAndOverlappings(int subscribe_overlappings, int index) {
         
+        if (this->meta_.overlapping_turns == 0 && this->meta_.index_offset == 0) {
+            // no data in cirle
+            return std::make_pair(nullopt, 0);
+        }
+        
         if (subscribe_overlappings > this->meta_.overlapping_turns) {
             return std::make_pair(nullopt, this->meta_.overlapping_turns);
         } else if (subscribe_overlappings == this->meta_.overlapping_turns && index >= this->meta_.index_offset) {
             return std::make_pair(nullopt, this->meta_.overlapping_turns);
         }
-        return std::make_pair(this->circle_[index], this->meta_.overlapping_turns);
+
+        if (this->meta_.overlapping_turns == 0) {
+            return std::make_pair(this->circle_[index], this->meta_.overlapping_turns);
+        } else {
+            if (this->meta_.index_offset == 0) {
+                return std::make_pair(this->circle_[index], this->meta_.overlapping_turns - 1);
+            } else {
+                return std::make_pair(this->circle_[index], this->meta_.overlapping_turns);
+            }
+        }
     }
 
     CircleMeta MessageCircle::getMeta() {
@@ -98,11 +112,12 @@ namespace repeater {
         if (meta == this->topic_records_.end()) {
             // not supported topic
         } else {
-            // if (meta->second.overlapping_turns > producer_overlapping) {
-            //     meta->second.overlapping_turns = producer_overlapping;
-            // }
+            if (meta->second.overlapping_turns < producer_overlapping) {
+                meta->second.overlapping_turns = producer_overlapping;
+            }
             if (meta->second.index_offset + 1 >= this->max_circle_size_) {
                 meta->second.index_offset = 0;
+
                 meta->second.overlapping_turns += 1;
             } else {
                 meta->second.index_offset += 1;
