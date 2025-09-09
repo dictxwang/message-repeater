@@ -22,7 +22,7 @@ namespace common_tools {
         }
     }
 
-    static double str_to_int(const Json::Value& value) {
+    static int str_to_int(const Json::Value& value) {
         std::string text = value.asString();
         if (text == "") {
             return 0;
