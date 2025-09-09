@@ -97,6 +97,10 @@ add_library(publisher ${LIB_PUBLISHER_SRC})
 FILE(GLOB_RECURSE LIB_SUBSCRIBER_SRC RELATIVE ${CMAKE_SOURCE_DIR}
     "src/subscriber/*")
 add_library(subscriber ${LIB_SUBSCRIBER_SRC})
+# layer
+FILE(GLOB_RECURSE LIB_LAYER_SRC RELATIVE ${CMAKE_SOURCE_DIR}
+    "src/layer/*")
+add_library(layer ${LIB_LAYER_SRC})
 # combiner
 FILE(GLOB_RECURSE LIB_COMBINER_SRC RELATIVE ${CMAKE_SOURCE_DIR}
     "src/combiner/*")
@@ -112,5 +116,6 @@ target_link_libraries(${STARTER_REPEATER}
     connection
     publisher
     subscriber
+    layer
     combiner
 )

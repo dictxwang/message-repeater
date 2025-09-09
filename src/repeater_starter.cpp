@@ -6,6 +6,7 @@
 #include "combiner/global_context.h"
 #include "publisher/publisher_acceptor.h"
 #include "subscriber/subscriber_acceptor.h"
+#include "layer/layer_connector.h"
 
 int main(int argc, char const *argv[]) {
 
@@ -38,6 +39,7 @@ int main(int argc, char const *argv[]) {
     subscriberBootstrap.start(config, global_context);
 
     // init and start layer subscribe
+    layer::start_layer_replay(config, global_context);
 
     while(true) {
         // std::cout << "repeator starter keep running" << std::endl;
