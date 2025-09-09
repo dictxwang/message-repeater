@@ -6,8 +6,12 @@ namespace subscriber {
 
     void SubscriberBootstrap::acceptHandle(repeater::RepeaterConfig &config, repeater::GlobalContext &context, int client_fd, string client_ip, int client_port) {
 
-        thread write_thread([this, client_fd, client_ip, client_port, &config, &context] {
+        bool connection_alived = true;
+        thread write_thread([this, client_fd, client_ip, client_port, &config, &context, &connection_alived] {
             while (true) {
+                if (!connection_alived) {
+                    break;
+                }
                 if (!this->isConnectionExists(client_ip, client_port)) {
                     info_log("subscriber connection not exists for {}:{}", client_ip, client_port);
                     break;
@@ -49,15 +53,19 @@ namespace subscriber {
             }
             close(client_fd);
             this->killAlive(client_ip, client_port);
+            connection_alived = false;
         });
         write_thread.detach();
 
-        thread read_thread([this, client_fd, client_ip, client_port, &config, &context] {
+        thread read_thread([this, client_fd, client_ip, client_port, &config, &context, &connection_alived] {
             size_t HEADER_SIZE = 4;
             size_t MAX_MESSAGE_SIZE = 65536;
 
             // process ping and subscribe
             while (true) {
+                if (!connection_alived) {
+                    break;
+                }
                 // Step1: read header of topic length
                 uint32_t topic_length = 0;
                 ssize_t bytes_received = recv(client_fd, &topic_length, HEADER_SIZE, MSG_WAITALL);
@@ -158,6 +166,7 @@ namespace subscriber {
 
             close(client_fd);
             this->killAlive(client_ip, client_port);
+            connection_alived = false;
         });
         read_thread.detach();
     }

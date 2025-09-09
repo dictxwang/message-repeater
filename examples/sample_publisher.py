@@ -48,7 +48,7 @@ class MessagePublisher:
         except ConnectionRefusedError:
             print(f"Connection refused. Ensure the server is running on {self._server_addr}:{self._server_port}")
         except Exception as e:
-            print(f"An error occurred: {e}")
+            print(f"An error occurred when create connection: {e}")
 
         self._connected = True
 
@@ -66,9 +66,16 @@ class MessagePublisher:
         send_data += body_data
 
         while True:
-            if not self._connected:
+            is_disconnected = False
+            # sleep 10 seconds and determine whether the socket is closed quickly
+            for _ in range(0, 20):
+                time.sleep(0.5)
+                if not self._connected:
+                    is_disconnected = True
+                    break
+            
+            if is_disconnected:
                 break
-            time.sleep(10)
 
             try:
                 self._client_fd.sendall(send_data)
@@ -102,19 +109,19 @@ class MessagePublisher:
                 text = body_data.decode("utf-8")
                 if text.lower().find(Pong_Success_Text) >= 0:
                     # success
-                    # print(f"receive pong: {text}")
+                    print(f"receive pong: {text}")
                     pass
                 else:
                     # fail
                     break
 
             except Exception as e:
-                print(f"An error occurred: {e}")
+                print(f"An error occurred when send ping: {e}")
                 break
 
         self._client_fd.close()
         self._connected = False
-        print("tcp connection closed")
+        print("ping thread exited")
 
 
 if __name__ == "__main__":
@@ -130,6 +137,8 @@ if __name__ == "__main__":
         message_val += 1
         message = "{\"side\": \"BUY\", \"val\": \""+ str(message_val) +"\"}"
         result = publisher.send_message(topic, message)
-        if not result:
+        if result:
+            print(f"send message: {message}")
+        else:
             # reconnect
             publisher.connect()

@@ -65,6 +65,7 @@ class MessageSubscribe:
                 return False
 
             topic_name = topic_data.decode("utf-8")
+
             if topic_name != MessageTopic_Subscribe:
                 return False
 
@@ -88,7 +89,7 @@ class MessageSubscribe:
                 print(f"subscribe failure and message is : {text}")
                 return False
         except Exception as e:
-            print(f"An error occurred: {e}")
+            print(f"An error occurred when subscribe: {e}")
 
         return False
 
@@ -132,7 +133,7 @@ class MessageSubscribe:
         except ConnectionRefusedError:
             print(f"Connection refused. Ensure the server is running on {self._server_addr}:{self._server_port}")
         except Exception as e:
-            print(f"An error occurred: {e}")
+            print(f"An error occurred when create connection: {e}")
 
         self._connected = True
 
@@ -150,18 +151,24 @@ class MessageSubscribe:
         send_data += body_data
 
         while True:
-            if not self._connected:
+            is_disconnected = False
+            # sleep 10 seconds and determine whether the socket is closed quickly
+            for _ in range(0, 20):
+                time.sleep(0.5)
+                if not self._connected:
+                    is_disconnected = True
+                    break
+            
+            if is_disconnected:
                 break
-            time.sleep(10)
 
             try:
                 self._client_fd.sendall(send_data)
             except Exception as e:
-                print(f"An error occurred: {e}")
+                print(f"An error occurred when send ping: {e}")
+                self.close()
                 break
-
-        self.close()
-        print("tcp connection closed")
+        print("ping thread exited")
 
 
 if __name__ == "__main__":
@@ -170,6 +177,8 @@ if __name__ == "__main__":
     topics = ["T001", "T002"]
 
     while True:
+        # wait while for retry
+        time.sleep(2)
         subscriber.connect()
 
         # before subscribe, wait for connection is ready

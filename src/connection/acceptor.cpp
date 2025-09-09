@@ -207,6 +207,7 @@ namespace connection {
 
     bool AbstractBootstrap::isConnectionExists(string client_ip, int client_port) {
 
+        std::shared_lock<std::shared_mutex> r_lock(this->rw_lock_);
         string key = std::string(client_ip) + ":" + std::to_string(client_port);
         auto connection = this->client_connections_.find(key);
         return connection != this->client_connections_.end();
