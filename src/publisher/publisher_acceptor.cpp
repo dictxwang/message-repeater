@@ -118,8 +118,8 @@ namespace publisher {
                 }
             }
         }
-
         close(client_fd);
+        this->killAlive(client_ip, client_port);
     }
 
     void PublisherBootstrap::clearConnectionResource(repeater::GlobalContext &context, string client_ip, int client_port) {

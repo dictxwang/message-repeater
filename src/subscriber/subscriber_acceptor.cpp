@@ -6,7 +6,6 @@ namespace subscriber {
 
     void SubscriberBootstrap::acceptHandle(repeater::RepeaterConfig &config, repeater::GlobalContext &context, int client_fd, string client_ip, int client_port) {
 
-
         thread write_thread([this, client_fd, client_ip, client_port, &config, &context] {
             while (true) {
                 if (!this->isConnectionExists(client_ip, client_port)) {
@@ -48,6 +47,8 @@ namespace subscriber {
                     }
                 }
             }
+            close(client_fd);
+            this->killAlive(client_ip, client_port);
         });
         write_thread.detach();
 
@@ -148,6 +149,9 @@ namespace subscriber {
                 } else {
                 }
             }
+
+            close(client_fd);
+            this->killAlive(client_ip, client_port);
         });
         read_thread.detach();
     }

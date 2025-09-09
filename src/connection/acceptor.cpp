@@ -186,6 +186,18 @@ namespace connection {
         }
     }
 
+    void AbstractBootstrap::killAlive(string client_ip, int client_port) {
+
+        string key = std::string(client_ip) + ":" + std::to_string(client_port);
+        auto connection = this->client_connections_.find(key);
+        if (connection != this->client_connections_.end()) {
+            // set heartbeat time to old history time
+            connection->second.latestHeartbeat = common_tools::get_current_epoch() - 86400;
+            std::unique_lock<std::shared_mutex> w_lock(this->rw_lock_);
+            this->client_connections_[key] = connection->second;
+        }
+    }
+
     bool AbstractBootstrap::isConnectionExists(string client_ip, int client_port) {
 
         string key = std::string(client_ip) + ":" + std::to_string(client_port);
@@ -237,7 +249,8 @@ namespace connection {
         ssize_t bytes_sent = 0;
         
         try {
-            bytes_sent = send(client_fd, buffer.data(), buffer.size(), 0);
+            // bytes_sent = send(client_fd, buffer.data(), buffer.size(), 0);
+            bytes_sent = send(client_fd, buffer.data(), buffer.size(), MSG_NOSIGNAL);
         } catch (std::exception &e) {
             #ifdef OPEN_STD_DEBUG_LOG
                 std::cout << "exception sending data occurred: " << e.what() << std::endl;
