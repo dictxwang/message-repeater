@@ -133,7 +133,7 @@ if __name__ == "__main__":
     while True:
         time.sleep(5)
 
-        topic = "T002"
+        topic = "Sample0001"
         message_val += 1
         message = "{\"side\": \"BUY\", \"val\": \""+ str(message_val) +"\"}"
         result = publisher.send_message(topic, message)

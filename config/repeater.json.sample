@@ -10,8 +10,8 @@
     "max_connection_idle_second": 30,
 
     "allown_topics": [
-        "T001",
-        "T002"
+        "Sample0001",
+        "Sample0002"
     ],
 
     "socket_write_timeout_second": 5,
@@ -22,8 +22,8 @@
         "127.0.0.1:21001"
     ],
     "layer_subscribe_topics": [
-        "SignalA",
-        "Signal01"
+        "Sample0001",
+        "Sample0002"
     ],
 
     "publisher_listen_address": "127.0.0.1",

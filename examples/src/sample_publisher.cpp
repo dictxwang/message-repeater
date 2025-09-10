@@ -14,6 +14,7 @@ int main(int argc, char const *argv[]) {
 
     repeater_client::RepeaterPublisher publisher = repeater_client::RepeaterPublisher(server_ip, server_port);
     
+    // could use in thread if you need
     thread publisher_thead([&publisher, &topic]{
         while (true) {
             // waiting for retry connection
@@ -34,6 +35,7 @@ int main(int argc, char const *argv[]) {
                     std::cout << "send message: " << topic << "," << message << std::endl;
                 } else {
                     std::cout << "fail to send message, retry later" << std::endl;
+                    break;
                 }
             }
         }

@@ -174,7 +174,7 @@ class MessageSubscribe:
 if __name__ == "__main__":
 
     subscriber = MessageSubscribe("127.0.0.1", 20001)
-    topics = ["T001", "T002"]
+    topics = ["Sample0001", "Sample0002"]
 
     while True:
         # wait while for retry
