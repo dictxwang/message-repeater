@@ -10,6 +10,7 @@
 #include <set>
 #include <iostream>
 #include <optional>
+#include <tuple>
 
 using namespace std;
 
@@ -42,7 +43,7 @@ namespace repeater {
 
     public:
         void append(string message);
-        pair<optional<string>, int> getMessageAndOverlappings(int subscribe_overlappings, int index);
+        tuple<optional<string>, int, int> getMessageAndCircleMeta(int subscribe_overlappings, int index);
 
         CircleMeta getMeta();
     };
@@ -92,7 +93,7 @@ namespace repeater {
     public:
         vector<string> getTopics();
         optional<CircleMeta> getMeta(string topic);
-        void updateMeta(string topic, int producer_overlapping);
+        void updateMeta(string topic, int producer_overlapping, int producer_index_offset);
     };
 
     class ConsumeRecordComposite {

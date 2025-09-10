@@ -19,28 +19,39 @@ namespace repeater {
         
     }
 
-    pair<optional<string>, int> MessageCircle::getMessageAndOverlappings(int subscribe_overlappings, int index) {
+    tuple<optional<string>, int, int> MessageCircle::getMessageAndCircleMeta(int subscribe_overlappings, int index) {
         
         if (this->meta_.overlapping_turns == 0 && this->meta_.index_offset == 0) {
             // no data in cirle
-            return std::make_pair(nullopt, 0);
-        }
-        
-        if (subscribe_overlappings > this->meta_.overlapping_turns) {
-            return std::make_pair(nullopt, this->meta_.overlapping_turns);
-        } else if (subscribe_overlappings == this->meta_.overlapping_turns && index >= this->meta_.index_offset) {
-            return std::make_pair(nullopt, this->meta_.overlapping_turns);
+            return std::make_tuple(nullopt, 0, 0);
         }
 
-        if (this->meta_.overlapping_turns == 0) {
-            return std::make_pair(this->circle_[index], this->meta_.overlapping_turns);
+        if (subscribe_overlappings > this->meta_.overlapping_turns) {
+            return std::make_tuple(nullopt, this->meta_.overlapping_turns, this->meta_.index_offset);
+        } else if (subscribe_overlappings == this->meta_.overlapping_turns && index >= this->meta_.index_offset) {
+            return std::make_tuple(nullopt, this->meta_.overlapping_turns, this->meta_.index_offset);
         } else {
-            if (this->meta_.index_offset == 0) {
-                return std::make_pair(this->circle_[index], this->meta_.overlapping_turns - 1);
+            if (subscribe_overlappings == 0 && index == 0) {
+                // if subscribe first read, do index processing for reading the latest message
+                int read_index = this->meta_.index_offset - 1;
+                if (read_index < 0) {
+                    read_index = this->max_size_ - 1;
+                }
+                return std::make_tuple(this->circle_[read_index], this->meta_.overlapping_turns, this->meta_.index_offset);
             } else {
-                return std::make_pair(this->circle_[index], this->meta_.overlapping_turns);
+                return std::make_tuple(this->circle_[index], this->meta_.overlapping_turns, this->meta_.index_offset);
             }
         }
+
+        // if (this->meta_.overlapping_turns == 0) {
+        //     return std::make_pair(this->circle_[index], this->meta_.overlapping_turns);
+        // } else {
+        //     if (this->meta_.index_offset == 0) {
+        //         return std::make_pair(this->circle_[index], this->meta_.overlapping_turns - 1);
+        //     } else {
+        //         return std::make_pair(this->circle_[index], this->meta_.overlapping_turns);
+        //     }
+        // }
     }
 
     CircleMeta MessageCircle::getMeta() {
@@ -107,20 +118,25 @@ namespace repeater {
         }
     }
 
-    void ConsumeRecord::updateMeta(string topic, int producer_overlapping) {
+    void ConsumeRecord::updateMeta(string topic, int producer_overlapping, int producer_index_offset) {
         auto meta = this->topic_records_.find(topic);
         if (meta == this->topic_records_.end()) {
             // not supported topic
         } else {
-            if (meta->second.overlapping_turns < producer_overlapping) {
+            if (meta->second.overlapping_turns == 0 && meta->second.index_offset == 0) {
+                // align with producer at the start
                 meta->second.overlapping_turns = producer_overlapping;
-            }
-            if (meta->second.index_offset + 1 >= this->max_circle_size_) {
-                meta->second.index_offset = 0;
-
-                meta->second.overlapping_turns += 1;
+                meta->second.index_offset = producer_index_offset;
             } else {
-                meta->second.index_offset += 1;
+                // if (meta->second.overlapping_turns < producer_overlapping) {
+                //     meta->second.overlapping_turns = producer_overlapping;
+                // }
+                if (meta->second.index_offset + 1 >= this->max_circle_size_) {
+                    meta->second.index_offset = 0;
+                    meta->second.overlapping_turns += 1;
+                } else {
+                    meta->second.index_offset += 1;
+                }
             }
 
             this->topic_records_[topic] = meta->second;

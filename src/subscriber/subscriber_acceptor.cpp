@@ -33,11 +33,12 @@ namespace subscriber {
 
                         optional<shared_ptr<repeater::MessageCircle>> circle = context.get_message_circle_composite()->getCircle(topic);
                         if (circle.has_value()) {
-                            pair<optional<string>, int> message_result = circle.value()->getMessageAndOverlappings(meta->overlapping_turns, meta->index_offset);
-                            if (message_result.first.has_value() && message_result.first.value().size() > 0) {
+                            tuple<optional<string>, int, int> message_result = circle.value()->getMessageAndCircleMeta(meta->overlapping_turns, meta->index_offset);
+                            auto message = std::get<0>(message_result);
+                            if (message.has_value() && message.value().size() > 0) {
 
                                 // write message to client
-                                if (!this->sendSocketData(client_fd, topic, message_result.first.value())) {
+                                if (!this->sendSocketData(client_fd, topic, message.value())) {
                                     // write fail, remove subscribed
                                     this->removeSubscribed(client_ip, client_port);
 
@@ -46,7 +47,9 @@ namespace subscriber {
                                 }
 
                                 // update record
-                                record.value()->updateMeta(topic, message_result.second);
+                                int producer_overlapping = std::get<1>(message_result);
+                                int producer_index_offset = std::get<2>(message_result);
+                                record.value()->updateMeta(topic, producer_overlapping, producer_index_offset);
                             }
                         }
                     }
