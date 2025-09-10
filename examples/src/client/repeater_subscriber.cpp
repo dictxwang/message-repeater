@@ -136,10 +136,11 @@ namespace repeater_client {
         if (!frame.has_value()) {
             this->is_subscribed_ = false;
             this->is_connected_ = false;
-        }
-        if (frame.value().first == MESSAGE_OP_TOPIC_PONG && frame.value().second.find("ok") == std::string::npos) {
-            // ping failure
-            this->closeConnection();
+        } else {
+            if (frame.value().first == MESSAGE_OP_TOPIC_PONG && frame.value().second.find("ok") == std::string::npos) {
+                // ping failure
+                this->closeConnection();
+            }
         }
         return frame;
     }
