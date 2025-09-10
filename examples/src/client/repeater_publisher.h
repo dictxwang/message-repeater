@@ -3,6 +3,7 @@
 
 #include "util.h"
 #include "constant.h"
+#include <cstring>
 #include <thread>
 #include <chrono>
 
