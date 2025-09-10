@@ -12,6 +12,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <cstdint>
+#include <optional>
 #include <unordered_map>
 #include <thread>
 #include <iostream>
