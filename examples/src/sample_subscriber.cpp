@@ -24,6 +24,7 @@ int main(int argc, char const *argv[]) {
             if (!subscriber.createConnection()) {
                 continue;
             }
+            std::cout << "success to connect" << std::endl;
 
             // waiting for connection ready
             std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -32,6 +33,7 @@ int main(int argc, char const *argv[]) {
             if (!subscriber.subscribe(topics)) {
                 continue;
             }
+            std::cout << "success to subscribe" << std::endl;
 
             while (true) {
                 // readMessage will be block

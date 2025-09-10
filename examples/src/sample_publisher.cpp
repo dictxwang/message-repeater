@@ -21,6 +21,7 @@ int main(int argc, char const *argv[]) {
             if (!publisher.createConnection()) {
                 continue;
             }
+            std::cout << "success to connect" << std::endl;
 
             // send message (the message maybe from outer scope by channel or other method)
             // message could be normal string or json string
