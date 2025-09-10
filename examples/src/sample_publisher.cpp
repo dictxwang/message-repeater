@@ -1,8 +1,5 @@
 #include <iostream>
 #include "client/repeater_publisher.h"
-#include "util/common_tool.h"
-#include "util/string_helper.h"
-#include "json/json.h"
 
 using namespace std;
 
@@ -43,7 +40,7 @@ int main(int argc, char const *argv[]) {
     publisher_thead.detach();
     
     while(true) {
-        std::cout << "subscriber starter keep running" << std::endl;
+        std::cout << "publisher starter keep running" << std::endl;
         std::this_thread::sleep_for(std::chrono::seconds(5));
     }
     return 0;

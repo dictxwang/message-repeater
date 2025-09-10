@@ -27,6 +27,9 @@ namespace repeater_client {
         bool is_subscribed_;
         int client_fd_;
     
+    private:
+        void closeConnection();
+    
     public:
         bool isConnected();
         bool isSubscribed();

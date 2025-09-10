@@ -24,6 +24,9 @@ namespace repeater_client {
         int server_port_;
         bool is_connected_;
         int client_fd_;
+    
+    private:
+        void closeConnection();
 
     public:
         bool isConnected();

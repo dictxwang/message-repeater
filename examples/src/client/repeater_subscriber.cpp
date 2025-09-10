@@ -1,4 +1,5 @@
 #include "repeater_subscriber.h"
+#include <iostream>
 
 namespace repeater_client {
 
@@ -8,6 +9,12 @@ namespace repeater_client {
 
     bool RepeaterSubscriber::isSubscribed() {
         return this->is_subscribed_;
+    }
+
+    void RepeaterSubscriber::closeConnection() {
+        close(this->client_fd_);
+        this->is_connected_ = false;
+        this->is_subscribed_ = false;
     }
 
     bool RepeaterSubscriber::createConnection() {
@@ -33,6 +40,15 @@ namespace repeater_client {
             return false;
         }
 
+        // Set Write timeout
+        struct timeval timeout;
+        timeout.tv_sec = 5;  // 5 seconds
+        timeout.tv_usec = 0; // 0 microseconds
+        if (setsockopt(client_fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout)) < 0) {
+            close(client_fd);
+            return false;
+        }
+
         // 2. Connect to the server
         if (connect(client_fd, (struct sockaddr *)&server_address, sizeof(server_address)) < 0) {
             close(client_fd);
@@ -41,6 +57,32 @@ namespace repeater_client {
 
         this->client_fd_ = client_fd;
         this->is_connected_ = true;
+
+        // start ping thread
+        thread ping_thread([this] {
+            bool is_disconnected = false;
+
+            while (true) {
+                for (int i = 0; i < 20; i++) {
+                    this_thread::sleep_for(chrono::milliseconds(500));
+                    if (!this->is_connected_) {
+                        is_disconnected = true;
+                        break;
+                    }
+                }
+                if (is_disconnected) {
+                    break;
+                }
+
+                // send ping
+                bool send_result = send_socket_data(this->client_fd_, MESSAGE_OP_TOPIC_PING, "ok");
+                if (!send_result) {
+                    this->closeConnection();
+                    break;
+                }
+            }
+        });
+        ping_thread.detach();
 
         return true;
     }
@@ -90,6 +132,15 @@ namespace repeater_client {
     }
 
     optional<pair<string, string>> RepeaterSubscriber::readMessage() {
-        return read_socket_frame(this->client_fd_);
+        auto frame = read_socket_frame(this->client_fd_);
+        if (!frame.has_value()) {
+            this->is_subscribed_ = false;
+            this->is_connected_ = false;
+        }
+        if (frame.value().first == MESSAGE_OP_TOPIC_PONG && frame.value().second.find("ok") == std::string::npos) {
+            // ping failure
+            this->closeConnection();
+        }
+        return frame;
     }
 }

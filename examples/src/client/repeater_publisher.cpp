@@ -8,6 +8,11 @@ namespace repeater_client {
         return this->is_connected_;
     }
 
+    void RepeaterPublisher::closeConnection() {
+        close(this->client_fd_);
+        this->is_connected_ = false;
+    }
+
     bool RepeaterPublisher::createConnection() {
 
         if (this->is_connected_) {
@@ -28,6 +33,15 @@ namespace repeater_client {
         // 1. Create client socket
         int client_fd = 0;
         if ((client_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+            return false;
+        }
+
+        // Set Write timeout
+        struct timeval timeout;
+        timeout.tv_sec = 5;  // 5 seconds
+        timeout.tv_usec = 0; // 0 microseconds
+        if (setsockopt(client_fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout)) < 0) {
+            close(client_fd);
             return false;
         }
 
@@ -66,7 +80,7 @@ namespace repeater_client {
                 // read pong
                 auto frame = read_socket_frame(this->client_fd_);
                 if (!frame.has_value()) {
-                    this->is_connected_ = false;
+                    this->closeConnection();
                     break;
                 }
                 if (frame.value().first == MESSAGE_OP_TOPIC_PONG) {
@@ -87,6 +101,11 @@ namespace repeater_client {
             return false;
         }
 
-        return send_socket_data(this->client_fd_, topic, message);
+        if (!send_socket_data(this->client_fd_, topic, message)) {
+            this->closeConnection();
+            return false;
+        } else {
+            return true;
+        }
     }
 }
