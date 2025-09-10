@@ -35,15 +35,17 @@ namespace subscriber {
                         if (circle.has_value()) {
                             tuple<optional<string>, int, int> message_result = circle.value()->getMessageAndCircleMeta(meta->overlapping_turns, meta->index_offset);
                             auto message = std::get<0>(message_result);
-                            if (message.has_value() && message.value().size() > 0) {
+                            if (message.has_value()) {
 
-                                // write message to client
-                                if (!this->sendSocketData(client_fd, topic, message.value())) {
-                                    // write fail, remove subscribed
-                                    this->removeSubscribed(client_ip, client_port);
+                                if (message.value().size() > 0) {
+                                    // write message to client
+                                    if (!this->sendSocketData(client_fd, topic, message.value())) {
+                                        // write fail, remove subscribed
+                                        this->removeSubscribed(client_ip, client_port);
 
-                                    warn_log("subscriber write fail and remove subscribed for {}:{}", client_ip, client_port);
-                                    break;
+                                        warn_log("subscriber write fail and remove subscribed for {}:{}", client_ip, client_port);
+                                        break;
+                                    }
                                 }
 
                                 // update record

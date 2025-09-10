@@ -32,12 +32,8 @@ namespace repeater {
             return std::make_tuple(nullopt, this->meta_.overlapping_turns, this->meta_.index_offset);
         } else {
             if (subscribe_overlappings == 0 && index == 0) {
-                // if subscribe first read, do index processing for reading the latest message
-                int read_index = this->meta_.index_offset - 1;
-                if (read_index < 0) {
-                    read_index = this->max_size_ - 1;
-                }
-                return std::make_tuple(this->circle_[read_index], this->meta_.overlapping_turns, this->meta_.index_offset);
+                // if subscribe first read, return null and make subscribe wait for next new message
+                return std::make_tuple("", this->meta_.overlapping_turns, this->meta_.index_offset);
             } else {
                 return std::make_tuple(this->circle_[index], this->meta_.overlapping_turns, this->meta_.index_offset);
             }
