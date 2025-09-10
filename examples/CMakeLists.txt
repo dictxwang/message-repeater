@@ -48,9 +48,21 @@ FILE(GLOB_RECURSE LIB_UTIL_SRC RELATIVE ${CMAKE_SOURCE_DIR}
     "../src/util/*")
 add_library(util ${LIB_UTIL_SRC})
 
+# client
+FILE(GLOB_RECURSE LIB_CLIENT_SRC RELATIVE ${CMAKE_SOURCE_DIR}
+    "src/client/*")
+add_library(client ${LIB_CLIENT_SRC})
+
 add_executable("sample_subscriber" "src/sample_subscriber.cpp")
 target_link_libraries("sample_subscriber"
     json
     util
+)
+
+add_executable("sample_publisher" "src/sample_publisher.cpp")
+target_link_libraries("sample_publisher"
+    json
+    util
+    client
 )
 
