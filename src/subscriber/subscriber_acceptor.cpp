@@ -6,11 +6,11 @@ namespace subscriber {
 
     void SubscriberBootstrap::acceptHandle(repeater::RepeaterConfig &config, repeater::GlobalContext &context, int client_fd, string client_ip, int client_port) {
 
-        bool connection_alived = true;
-        thread write_thread([this, client_fd, client_ip, client_port, &config, &context, &connection_alived] {
+        shared_ptr<bool> connection_alived = std::make_shared<bool>(true);
+        thread write_thread([this, client_fd, client_ip, client_port, &config, &context, connection_alived] {
             while (true) {
                 this_thread::sleep_for(chrono::microseconds(1));
-                if (!connection_alived) {
+                if (!(*connection_alived)) {
                     break;
                 }
                 if (!this->isConnectionExists(client_ip, client_port)) {
@@ -54,22 +54,23 @@ namespace subscriber {
             }
             close(client_fd);
             this->killAlive(client_ip, client_port);
-            connection_alived = false;
+            (*connection_alived) = false;
         });
         write_thread.detach();
 
-        thread read_thread([this, client_fd, client_ip, client_port, &config, &context, &connection_alived] {
+        thread read_thread([this, client_fd, client_ip, client_port, &config, &context, connection_alived] {
             size_t HEADER_SIZE = 4;
             size_t MAX_MESSAGE_SIZE = 65536;
 
             // process ping and subscribe
             while (true) {
-                if (!connection_alived) {
+                if (!(*connection_alived)) {
                     break;
                 }
                 // Step1: read header of topic length
                 uint32_t topic_length = 0;
                 ssize_t bytes_received = recv(client_fd, &topic_length, HEADER_SIZE, MSG_WAITALL);
+                
                 if (bytes_received != HEADER_SIZE) {
                     if (bytes_received == 0) {
                         err_log("client of {} disconnected", this->role_);
@@ -167,7 +168,7 @@ namespace subscriber {
 
             close(client_fd);
             this->killAlive(client_ip, client_port);
-            connection_alived = false;
+            (*connection_alived) = false;
         });
         read_thread.detach();
     }

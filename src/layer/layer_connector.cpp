@@ -112,15 +112,15 @@ namespace layer {
                 info_log("success to subscribe layer replay: {}", subscribe_address);
             }
 
-            bool socket_disconnected = false;
+            shared_ptr<bool> socket_disconnected = std::make_shared<bool>(false);
             // 5. Start ping thread
-            thread ping_thread([client_fd, &subscribe_address, &socket_disconnected] {
-                bool is_disconnected = false;
-
+            thread ping_thread([client_fd, &subscribe_address, socket_disconnected] {
+                
                 while (true) {
+                    bool is_disconnected = false;
                     for (int i = 0; i < 20; i++) {
                         this_thread::sleep_for(chrono::milliseconds(500));
-                        if (socket_disconnected) {
+                        if ((*socket_disconnected)) {
                             is_disconnected = true;
                             break;
                         }
@@ -133,7 +133,7 @@ namespace layer {
                     bool send_result = send_socket_data(client_fd, connection::MESSAGE_OP_TOPIC_PING, "ok");
                     if (!send_result) {
                         warn_log("fail to send ping to layer replay: {}", subscribe_address);
-                        socket_disconnected = true;
+                        (*socket_disconnected) = true;
                         break;
                     }
                 }
@@ -170,7 +170,7 @@ namespace layer {
                 }
             }
 
-            socket_disconnected = true;
+            (*socket_disconnected) = true;
             close(client_fd);
         }
     }
