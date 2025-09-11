@@ -155,7 +155,7 @@ namespace subscriber {
                         // topic not support
                         this->sendSocketData(client_fd, connection::MESSAGE_OP_TOPIC_SUBSCRIBE, "topic is empty or not support");
                     } else {
-                        if (context.get_consume_record_composite()->createRecordIfAbsent(client_ip, client_port, topics, config.max_topic_circle_size)) {
+                        if (context.get_consume_record_composite()->createNewRecord(client_ip, client_port, topics, config.max_topic_circle_size)) {
                             // success
                             if (this->sendSocketData(client_fd, connection::MESSAGE_OP_TOPIC_SUBSCRIBE, "ok")) {
                                 this->putSubscribed(client_ip, client_port);

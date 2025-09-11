@@ -143,7 +143,7 @@ namespace repeater {
         this->max_records_size_ = max_records_size;
     }
 
-    bool ConsumeRecordComposite::createRecordIfAbsent(string client_ip, int client_port, vector<string> topics, int max_circle_size) {
+    bool ConsumeRecordComposite::createNewRecord(string client_ip, int client_port, vector<string> topics, int max_circle_size) {
         
         if (topics.size() == 0) {
             return false;
@@ -156,11 +156,14 @@ namespace repeater {
         string key = client_ip + ":" + std::to_string(client_port);
 
         std::unique_lock<std::shared_mutex> w_lock(this->rw_lock_);
-        auto record = this->consume_records_.find(key);
-        if (record == this->consume_records_.end()) {
-            shared_ptr<ConsumeRecord> c_record = std::make_shared<ConsumeRecord>(client_ip, client_port, topics, max_circle_size);
-            this->consume_records_[key] = c_record;
-        }
+        // auto record = this->consume_records_.find(key);
+        // if (record == this->consume_records_.end()) {
+        //     shared_ptr<ConsumeRecord> c_record = std::make_shared<ConsumeRecord>(client_ip, client_port, topics, max_circle_size);
+        //     this->consume_records_[key] = c_record;
+        // }
+
+        shared_ptr<ConsumeRecord> c_record = std::make_shared<ConsumeRecord>(client_ip, client_port, topics, max_circle_size);
+        this->consume_records_[key] = c_record;
         
         #ifdef OPEN_STD_DEBUG_LOG
             std::cout << "after create consume records size is " << this->consume_records_.size() << std::endl;

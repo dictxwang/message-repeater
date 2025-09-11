@@ -108,7 +108,7 @@ namespace repeater {
     
     public:
         void init(int max_records_size);
-        bool createRecordIfAbsent(string client_ip, int client_port, vector<string> topics, int max_circle_size);
+        bool createNewRecord(string client_ip, int client_port, vector<string> topics, int max_circle_size);
         optional<shared_ptr<ConsumeRecord>> getRecord(string client_ip, int client_port);
         void removeRecord(string client_ip, int client_port);
     };
