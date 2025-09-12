@@ -17,10 +17,10 @@ namespace repeater {
             for (string topic : topics) {
                 auto circle = context.get_message_circle_composite()->getCircle(topic);
                 if (!circle.has_value()) {
-                    warn_log("[watchdog] message circle not found for {}", topic);
+                    warn_log("[watchdog] message circle not found for topic {}", topic);
                 } else {
                     CircleMeta meta = circle.value()->getMeta();
-                    info_log("[watchdog] message circle overlapping_turns={}, index_offset={}", meta.overlapping_turns, meta.index_offset);
+                    info_log("[watchdog] message circle for topic {} overlapping_turns={}, index_offset={}", topic, meta.overlapping_turns, meta.index_offset);
                 }
             }
         }

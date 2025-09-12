@@ -184,7 +184,7 @@ namespace connection {
                 info_log("{} after alive detection remain {} connections", this->role_, this->client_connections_.size());
             }
 
-            if (this->latest_alive_detection_time_ + 60 >= now) {
+            if (this->latest_alive_detection_time_ + 60 <= now) {
                 info_log("{} has {}/{} alived connections", this->role_, this->client_connections_.size(), this->max_connection_);
                 this->latest_alive_detection_time_ = now;
             }
