@@ -36,6 +36,8 @@ namespace repeater {
                 this->layer_subscribe_addresses.push_back(address);
             }
         }
+
+        this->rw_lock_ = std::make_shared<shared_mutex>();
     }
 
     tgbot::TgApi& GlobalContext::get_tg_bot() {
@@ -68,5 +70,21 @@ namespace repeater {
 
     vector<string> &GlobalContext::get_layer_subscribe_addresses() {
         return this->layer_subscribe_addresses;
+    }
+
+    void GlobalContext::update_connections_full(string role, bool fulled) {
+        std::unique_lock<std::shared_mutex> w_lock((*this->rw_lock_));
+        this->bootstrap_connections_full_status[role] = fulled;
+    }
+
+    vector<string> GlobalContext::get_connections_full_roles() {
+        std::shared_lock<std::shared_mutex> r_lock((*this->rw_lock_));
+        vector<string> roles;
+        for (auto [k, v] : this->bootstrap_connections_full_status) {
+            if (v) {
+                roles.push_back(k);
+            }
+        }
+        return roles;
     }
 }

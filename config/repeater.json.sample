@@ -8,7 +8,7 @@
 
     "tg_bot_token": ":-",
     "tg_chat_id": -1,
-    "tg_send_message": true,
+    "tg_send_message": false,
 
     "max_topic_number": 10,
     "max_topic_circle_size": 16,

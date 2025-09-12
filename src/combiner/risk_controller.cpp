@@ -5,14 +5,12 @@ using namespace std;
 namespace repeater {
 
     void start_watchdog(RepeaterConfig& config, GlobalContext& context) {
-        thread circle_thead(watch_topic_circles, ref(config), ref(context));
+        thread circle_thead(watch_connections_and_circles, ref(config), ref(context));
         circle_thead.detach();
-        info_log("[watchdog] start thread of watching topic circles");
-
-        send_warning_message(config, context, "watchdog started");
+        info_log("[watchdog] start thread of watching topic circles and bootstrap connections");
     }
 
-    void watch_topic_circles(RepeaterConfig& config, GlobalContext& context) {
+    void watch_connections_and_circles(RepeaterConfig& config, GlobalContext& context) {
         while (true) {
             this_thread::sleep_for(chrono::minutes(2));
             vector <string> topics = context.get_message_circle_composite()->getTopics();
@@ -24,6 +22,19 @@ namespace repeater {
                     CircleMeta meta = circle.value()->getMeta();
                     info_log("[watchdog] message circle for topic {} overlapping_turns={}, index_offset={}", topic, meta.overlapping_turns, meta.index_offset);
                 }
+            }
+
+            // check circle if reach limit
+            if (topics.size() >= config.max_topic_number) {
+                warn_log("[watchdog] topic number has reach max limit");
+                send_warning_message(config, context, "topic number has reach max limit.");
+            }
+
+            // check connection if reach limit
+            vector<string> full_roles = context.get_connections_full_roles();
+            for (string role : full_roles) {
+                warn_log("[watchdog] connection number of {} has reach max limit", role);
+                send_warning_message(config, context, "connection number of " + role + " has reach max limit.");
             }
         }
     }

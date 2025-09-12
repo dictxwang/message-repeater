@@ -189,6 +189,8 @@ namespace connection {
                 this->latest_alive_detection_time_ = now;
             }
 
+            context.update_connections_full(this->role_, this->client_connections_.size() >= this->max_connection_);
+
             w_lock.unlock();
         }
     }

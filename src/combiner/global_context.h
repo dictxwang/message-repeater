@@ -3,6 +3,9 @@
 
 #include <set>
 #include <vector>
+#include <unordered_map>
+#include <mutex>
+#include <shared_mutex>
 #include "config/repeater_config.h"
 #include "message_container.h"
 #include "tgbot/api.h"
@@ -27,9 +30,12 @@ namespace repeater {
         vector<string> layer_subscribe_topics;
         vector<string> layer_subscribe_addresses;
 
+        unordered_map<string, bool> bootstrap_connections_full_status;
+        shared_ptr<shared_mutex> rw_lock_;
+
     public:
         void init(RepeaterConfig& config);
-        
+
         tgbot::TgApi& get_tg_bot();
         shared_ptr<MessageCircleComposite> get_message_circle_composite();
         shared_ptr<ConsumeRecordComposite> get_consume_record_composite();
@@ -39,6 +45,9 @@ namespace repeater {
         bool is_enable_layer_subscribe();
         vector<string> &get_layer_subscribe_topics();
         vector<string> &get_layer_subscribe_addresses();
+
+        void update_connections_full(string role, bool fulled);
+        vector<string> get_connections_full_roles();
     };
 }
 #endif
