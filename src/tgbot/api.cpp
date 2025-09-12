@@ -16,7 +16,7 @@ namespace tgbot {
     pair<int, string> TgApi::send_message(int64_t chat_id, const string& text) {
 
         vector<pair<string, string>> body_params;
-        body_params.push_back(pair<string, string>("chat_id", strHelper::toString(chat_id)));
+        body_params.push_back(pair<string, string>("chat_id", toString(chat_id)));
         body_params.push_back(pair<string, string>("text", text));
     
         pair<int, string> result;
@@ -65,7 +65,7 @@ namespace tgbot {
             for (pair<string, string> p : query_params) {
                 query_param_list.push_back(p.first + "=" + curl_easy_escape(curl, p.second.c_str(), 0));
             }
-            queryString = strHelper::joinStrings(query_param_list, delimiter_join);
+            queryString = joinStrings(query_param_list, delimiter_join);
         }
 
         if (!form_params.empty()) {
@@ -73,7 +73,7 @@ namespace tgbot {
             for (pair<string, string> p : form_params) {
                 form_param_list.push_back(p.first + "=" + curl_easy_escape(curl, p.second.c_str(), 0));
             }
-            formString = strHelper::joinStrings(form_param_list, delimiter_join);
+            formString = joinStrings(form_param_list, delimiter_join);
             extra_header.push_back("Content-Type: application/x-www-form-urlencoded");
         }
 
@@ -118,4 +118,21 @@ namespace tgbot {
         userData->append(static_cast<char*>(contents), totalSize);
         return totalSize;
     }
-}
+
+    static std::string joinStrings(const std::vector<std::string>& strings, const std::string& delimiter) {
+        std::ostringstream oss;
+        for (size_t i = 0; i < strings.size(); ++i) {
+            oss << strings[i];
+            if (i != strings.size() - 1) { // Add delimiter between strings
+                oss << delimiter;
+            }
+        }
+        return oss.str();
+    }
+    template <class T> inline
+    static std::string toString (const T& t) {
+        std::stringstream ss;
+        ss << t;
+        return ss.str();
+    }
+    }

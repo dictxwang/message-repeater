@@ -49,6 +49,10 @@ add_library(util ${LIB_UTIL_SRC})
 FILE(GLOB_RECURSE LIB_TGBOT_SRC RELATIVE ${CMAKE_SOURCE_DIR}
     "src/tgbot/*")
 add_library(tgbot ${LIB_TGBOT_SRC})
+target_link_libraries(tgbot
+    CURL::libcurl
+    OpenSSL::SSL OpenSSL::Crypto
+)
 
 add_executable(${STARTER_TEST} "src/test_starter.cpp")
 target_link_libraries(${STARTER_TEST}
@@ -56,8 +60,8 @@ target_link_libraries(${STARTER_TEST}
     ${_LIB_SPDLOG}
     json
     config
-    # CURL::libcurl
-    # OpenSSL::SSL OpenSSL::Crypto
+    CURL::libcurl
+    OpenSSL::SSL OpenSSL::Crypto
 )
 
 # connection
@@ -84,8 +88,6 @@ add_library(combiner ${LIB_COMBINER_SRC})
 add_executable(${STARTER_REPEATER} "src/repeater_starter.cpp")
 target_link_libraries(${STARTER_REPEATER}
     ${_LIB_SPDLOG}
-    CURL::libcurl
-    OpenSSL::SSL OpenSSL::Crypto
     json
     config
     connection
@@ -93,6 +95,6 @@ target_link_libraries(${STARTER_REPEATER}
     subscriber
     layer
     combiner
-    tgbot
     util
+    tgbot
 )

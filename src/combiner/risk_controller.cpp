@@ -8,6 +8,8 @@ namespace repeater {
         thread circle_thead(watch_topic_circles, ref(config), ref(context));
         circle_thead.detach();
         info_log("[watchdog] start thread of watching topic circles");
+
+        send_warning_message(config, context, "watchdog started");
     }
 
     void watch_topic_circles(RepeaterConfig& config, GlobalContext& context) {

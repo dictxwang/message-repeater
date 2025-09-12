@@ -7,12 +7,16 @@
 #include <curl/curl.h>
 #include <stdexcept>
 #include "json/json.h"
-#include "util/string_helper.h"
 
 namespace tgbot {
 
     const std::string API_Endpoint = "https://api.telegram.org";
     static size_t curl_write_callback(void* contents, size_t size, size_t nmemb, std::string* userData);
+
+    template <class T>
+    static std::string toString (const T& t);
+
+    static std::string joinStrings(const std::vector<std::string>& strings, const std::string& delimiter);
 
     class TgApi {
     public:
