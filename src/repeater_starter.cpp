@@ -7,6 +7,7 @@
 #include "publisher/publisher_acceptor.h"
 #include "subscriber/subscriber_acceptor.h"
 #include "layer/layer_connector.h"
+#include "combiner/risk_controller.h"
 
 int main(int argc, char const *argv[]) {
 
@@ -40,6 +41,9 @@ int main(int argc, char const *argv[]) {
 
     // init and start layer subscribe
     layer::start_layer_replay(config, global_context);
+
+    // start watchdog
+    repeater::start_watchdog(config, global_context);
 
     while(true) {
         // std::cout << "repeator starter keep running" << std::endl;

@@ -40,7 +40,9 @@ namespace connection {
 
     class AbstractBootstrap {
     public:
-        AbstractBootstrap() {};
+        AbstractBootstrap() {
+            this->latest_alive_detection_time_ = common_tools::get_current_epoch();
+        };
         virtual ~AbstractBootstrap() {};
 
     protected:
@@ -50,6 +52,7 @@ namespace connection {
         string listen_address_;
         int listen_port_;
         int max_connection_;
+        uint64_t latest_alive_detection_time_;
 
         unordered_map<string, ConnectionEntity> client_connections_;
 
@@ -70,6 +73,7 @@ namespace connection {
     public:
         void init(string role, string listen_address, int listen_port, int max_connection);
         void start(repeater::RepeaterConfig &config, repeater::GlobalContext &context);
+        bool reachMaxConnection();
     };
 }
 

@@ -98,6 +98,15 @@ namespace repeater {
         }
     }
 
+    vector<string> MessageCircleComposite::getTopics() {
+        std::shared_lock<std::shared_mutex> r_lock(this->rw_lock_);
+        vector<string> result;
+        for (string topic : this->topics_) {
+            result.push_back(topic);
+        }
+        return result;
+    }
+
     vector<string> ConsumeRecord::getTopics() {
         return this->topics_;
     }

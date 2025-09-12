@@ -1,0 +1,28 @@
+#include "risk_controller.h"
+
+using namespace std;
+
+namespace repeater {
+
+    void start_watchdog(RepeaterConfig& config, GlobalContext& context) {
+        thread circle_thead(watch_topic_circles, ref(config), ref(context));
+        circle_thead.detach();
+        info_log("[watchdog] start thread of watching topic circles");
+    }
+
+    void watch_topic_circles(RepeaterConfig& config, GlobalContext& context) {
+        while (true) {
+            this_thread::sleep_for(chrono::minutes(2));
+            vector <string> topics = context.get_message_circle_composite()->getTopics();
+            for (string topic : topics) {
+                auto circle = context.get_message_circle_composite()->getCircle(topic);
+                if (!circle.has_value()) {
+                    warn_log("[watchdog] message circle not found for {}", topic);
+                } else {
+                    CircleMeta meta = circle.value()->getMeta();
+                    info_log("[watchdog] message circle overlapping_turns={}, index_offset={}", meta.overlapping_turns, meta.index_offset);
+                }
+            }
+        }
+    }
+}

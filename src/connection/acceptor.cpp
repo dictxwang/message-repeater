@@ -2,6 +2,12 @@
 
 namespace connection {
 
+    bool AbstractBootstrap::reachMaxConnection() {
+
+        std::shared_lock<std::shared_mutex> r_lock(this->rw_lock_);
+        return this->client_connections_.size() >= this->max_connection_;
+    }
+
     void AbstractBootstrap::init(string role, string listen_address, int listen_port, int max_connection) {
         this->listen_address_ = listen_address;
         this->listen_port_ = listen_port;
@@ -176,6 +182,11 @@ namespace connection {
 
             if (idle_expired_keys.size() > 0) {
                 info_log("{} after alive detection remain {} connections", this->role_, this->client_connections_.size());
+            }
+
+            if (this->latest_alive_detection_time_ + 60 >= now) {
+                info_log("{} has {}/{} alived connections", this->role_, this->client_connections_.size(), this->max_connection_);
+                this->latest_alive_detection_time_ = now;
             }
 
             w_lock.unlock();

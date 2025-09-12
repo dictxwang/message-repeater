@@ -64,6 +64,7 @@ namespace repeater {
         bool createCircleIfAbsent(string topic, int circle_max_size);
         bool appendMessageToCircle(string topic, string message);
         optional<shared_ptr<MessageCircle>> getCircle(string topic);
+        vector<string> getTopics();
     };
 
 
