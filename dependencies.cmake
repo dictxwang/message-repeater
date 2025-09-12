@@ -18,10 +18,10 @@ link_directories(
     ${CUSTOM_LIB_DIR}
 )
 
-# # Find Curl
-# find_package(CURL REQUIRED)
-# # Find OpenSSL
-# find_package(OpenSSL REQUIRED)
+# Find Curl
+find_package(CURL REQUIRED)
+# Find OpenSSL
+find_package(OpenSSL REQUIRED)
 
 FIND_LIBRARY(_LIB_SPDLOG
     NAMES spdlog

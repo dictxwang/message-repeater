@@ -18,6 +18,12 @@ namespace repeater {
         bool loadRepeaterConfig(const char* inputfile);
 
     public:
+        string process_node_name;
+
+        string tg_bot_token;
+        int64_t tg_chat_id;
+        bool tg_send_message;
+
         int max_topic_number;
         int max_topic_circle_size;
         int max_message_body_size;

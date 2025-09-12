@@ -11,6 +11,12 @@ namespace repeater {
         }
 
         // Parse own configuration properties
+        this->process_node_name = this->doc_["process_node_name"].asString();
+
+        this->tg_bot_token = this->doc_["tg_bot_token"].asString();
+        this->tg_chat_id = this->doc_["tg_chat_id"].asInt64();
+        this->tg_send_message = this->doc_["tg_send_message"].asBool();
+
         this->max_topic_number = this->doc_["max_topic_number"].asInt();
         this->max_topic_circle_size = this->doc_["max_topic_circle_size"].asInt();
         this->max_message_body_size = this->doc_["max_message_body_size"].asInt();

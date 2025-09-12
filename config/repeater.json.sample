@@ -4,6 +4,12 @@
     "logger_level": 2,
     "logger_max_files": 7,
 
+    "process_node_name": "dev0001",
+
+    "tg_bot_token": ":-",
+    "tg_chat_id": -1,
+    "tg_send_message": true,
+
     "max_topic_number": 10,
     "max_topic_circle_size": 16,
     "max_message_body_size": 4096,

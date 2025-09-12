@@ -25,4 +25,16 @@ namespace repeater {
             }
         }
     }
+
+    void send_warning_message(RepeaterConfig& config, GlobalContext& context, string message) {
+        if (!config.tg_send_message) {
+            warn_log("close send tg messag: {}", message);
+        } else {
+            message = "[" + config.process_node_name + "] " + message;
+            pair<int, string> res = context.get_tg_bot().send_message(config.tg_chat_id, message);
+            if (res.first != 0) {
+                err_log("fail to send tg message: {} {}", res.first, res.second);
+            }
+        }
+    }
 }

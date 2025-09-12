@@ -13,5 +13,7 @@ namespace repeater {
 
     void start_watchdog(RepeaterConfig& config, GlobalContext& context);
     void watch_topic_circles(RepeaterConfig& config, GlobalContext& context);
+
+    void send_warning_message(RepeaterConfig& config, GlobalContext& context, string message);
 }
 #endif

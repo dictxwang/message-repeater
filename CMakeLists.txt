@@ -30,11 +30,6 @@ include_directories(
     ${CUSTOM_INCLUDE_DIR}
 )
 
-# # common
-# FILE(GLOB_RECURSE LIB_COMMON_SRC RELATIVE ${CMAKE_SOURCE_DIR}
-#     "src/common/*")
-# add_library(common ${LIB_COMMON_SRC})
-
 # json
 FILE(GLOB_RECURSE LIB_JSON_SRC RELATIVE ${CMAKE_SOURCE_DIR}
     "src/json/*")
@@ -49,40 +44,20 @@ add_library(config ${LIB_CONFIG_SRC})
 FILE(GLOB_RECURSE LIB_UTIL_SRC RELATIVE ${CMAKE_SOURCE_DIR}
     "src/util/*")
 add_library(util ${LIB_UTIL_SRC})
-# target_link_libraries(util
-#     OpenSSL::SSL OpenSSL::Crypto
-# )
 
-# # tgbot
-# FILE(GLOB_RECURSE LIB_TGBOT_SRC RELATIVE ${CMAKE_SOURCE_DIR}
-#     "src/tgbot/*")
-# add_library(tgbot ${LIB_TGBOT_SRC})
-
-# repeater
-# FILE(GLOB_RECURSE LIB_AGENT_SRC RELATIVE ${CMAKE_SOURCE_DIR}
-#     "src/agent/*")
-# add_library(agent ${LIB_AGENT_SRC})
-# target_link_libraries(agent
-
-#     ${_LIB_SPDLOG}
-#     CURL::libcurl
-#     OpenSSL::SSL OpenSSL::Crypto
-#     common
-#     json
-#     config
-#     util
-#     dbsource
-#     # tgbot
-# )
+# tgbot
+FILE(GLOB_RECURSE LIB_TGBOT_SRC RELATIVE ${CMAKE_SOURCE_DIR}
+    "src/tgbot/*")
+add_library(tgbot ${LIB_TGBOT_SRC})
 
 add_executable(${STARTER_TEST} "src/test_starter.cpp")
 target_link_libraries(${STARTER_TEST}
 
     ${_LIB_SPDLOG}
     json
+    config
     # CURL::libcurl
     # OpenSSL::SSL OpenSSL::Crypto
-    config
 )
 
 # connection
@@ -109,13 +84,15 @@ add_library(combiner ${LIB_COMBINER_SRC})
 add_executable(${STARTER_REPEATER} "src/repeater_starter.cpp")
 target_link_libraries(${STARTER_REPEATER}
     ${_LIB_SPDLOG}
+    CURL::libcurl
+    OpenSSL::SSL OpenSSL::Crypto
     json
-    # CURL::libcurl
-    # OpenSSL::SSL OpenSSL::Crypto
     config
     connection
     publisher
     subscriber
     layer
     combiner
+    tgbot
+    util
 )

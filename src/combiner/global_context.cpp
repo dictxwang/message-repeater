@@ -5,6 +5,8 @@ using namespace std;
 namespace repeater {
 
     void GlobalContext::init(RepeaterConfig& config) {
+        
+        this->tg_bot.init_default_endpoint(config.tg_bot_token);
 
         for (string topic : config.allown_topics) {
             if (topic == "*") {
@@ -34,6 +36,10 @@ namespace repeater {
                 this->layer_subscribe_addresses.push_back(address);
             }
         }
+    }
+
+    tgbot::TgApi& GlobalContext::get_tg_bot() {
+        return this->tg_bot;
     }
 
     shared_ptr<MessageCircleComposite> GlobalContext::get_message_circle_composite() {
