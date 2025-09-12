@@ -37,6 +37,7 @@ namespace repeater {
             }
         }
 
+        this->bootstrap_connections_full_status = std::make_shared<unordered_map<string, bool>>();
         this->rw_lock_ = std::make_shared<shared_mutex>();
     }
 
