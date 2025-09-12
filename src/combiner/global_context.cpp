@@ -74,13 +74,13 @@ namespace repeater {
 
     void GlobalContext::update_connections_full(string role, bool fulled) {
         std::unique_lock<std::shared_mutex> w_lock((*this->rw_lock_));
-        this->bootstrap_connections_full_status[role] = fulled;
+        (*this->bootstrap_connections_full_status)[role] = fulled;
     }
 
     vector<string> GlobalContext::get_connections_full_roles() {
         std::shared_lock<std::shared_mutex> r_lock((*this->rw_lock_));
         vector<string> roles;
-        for (auto [k, v] : this->bootstrap_connections_full_status) {
+        for (auto [k, v] : (*this->bootstrap_connections_full_status)) {
             if (v) {
                 roles.push_back(k);
             }

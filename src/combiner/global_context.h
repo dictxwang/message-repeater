@@ -30,7 +30,7 @@ namespace repeater {
         vector<string> layer_subscribe_topics;
         vector<string> layer_subscribe_addresses;
 
-        unordered_map<string, bool> bootstrap_connections_full_status;
+        shared_ptr<unordered_map<string, bool>> bootstrap_connections_full_status;
         shared_ptr<shared_mutex> rw_lock_;
 
     public:
