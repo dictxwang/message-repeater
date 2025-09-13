@@ -5,6 +5,7 @@
     "logger_max_files": 7,
 
     "process_node_name": "dev0001",
+    "enable_run_watchdog": true,
 
     "tg_bot_token": ":-",
     "tg_chat_id": -1,

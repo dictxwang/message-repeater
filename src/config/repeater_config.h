@@ -19,6 +19,7 @@ namespace repeater {
 
     public:
         string process_node_name;
+        bool enable_run_watchdog;
 
         string tg_bot_token;
         int64_t tg_chat_id;

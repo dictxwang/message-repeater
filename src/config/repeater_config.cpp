@@ -12,6 +12,7 @@ namespace repeater {
 
         // Parse own configuration properties
         this->process_node_name = this->doc_["process_node_name"].asString();
+        this->enable_run_watchdog = this->doc_["enable_run_watchdog"].asBool();
 
         this->tg_bot_token = this->doc_["tg_bot_token"].asString();
         this->tg_chat_id = this->doc_["tg_chat_id"].asInt64();
