@@ -37,7 +37,7 @@ function start_daemon() {
     status ${process_name} ${pid_file}
     s=$?
     if [[ $s == 1 ]]; then
-        echo "process had started."
+        echo "process by config file '${config_file}' had started."
         exit 0
     fi
 
@@ -49,7 +49,7 @@ function start_daemon() {
     fi
     pid=$!
     echo ${pid} > ${pid_file}
-    echo "process started with pid ${pid}."
+    echo "process by config file '${config_file}' started with pid ${pid}."
     exit 0
 }
 
