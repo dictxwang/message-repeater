@@ -100,7 +100,7 @@ namespace connection {
                 warn_log("{} server reach max connection", this->role_);
                 // TODO send response
                 close(client_fd);
-                return;
+                continue;
             }
 
             // Set Write timeout
@@ -110,14 +110,14 @@ namespace connection {
             if (setsockopt(client_fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout)) < 0) {
                 warn_log("{} fail to set write timeout for client", this->role_);
                 close(client_fd);
-                return;
+                continue;
             }
 
             int optval_nodelay = 1;
             if (setsockopt(client_fd, IPPROTO_TCP, TCP_NODELAY, &optval_nodelay, sizeof(optval_nodelay)) < 0) {
                 warn_log("{} fail to set tcp_nodelay for client", this->role_);
                 close(client_fd);
-                return;
+                continue;
             }
 
             // Get client info
