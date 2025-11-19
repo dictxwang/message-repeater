@@ -9,7 +9,7 @@ namespace subscriber {
         shared_ptr<bool> connection_alived = std::make_shared<bool>(true);
         thread write_thread([this, client_fd, client_ip, client_port, &config, &context, connection_alived] {
             while (true) {
-                this_thread::sleep_for(chrono::microseconds(1));
+                this_thread::sleep_for(chrono::microseconds(50));
                 if (!(*connection_alived)) {
                     break;
                 }
