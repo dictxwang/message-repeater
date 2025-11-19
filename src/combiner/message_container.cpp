@@ -19,7 +19,7 @@ namespace repeater {
         
     }
 
-    tuple<optional<string>, int, int> MessageCircle::getMessageAndCircleMeta(int subscribe_overlappings, int index) {
+    tuple<optional<string>, int, int> MessageCircle::getMessageAndCircleMeta(int subscribe_overlappings, int index, bool first_read) {
         
         if (this->meta_.overlapping_turns == 0 && this->meta_.index_offset == 0) {
             // no data in cirle
@@ -32,8 +32,18 @@ namespace repeater {
             return std::make_tuple(nullopt, this->meta_.overlapping_turns, this->meta_.index_offset);
         } else {
             if (subscribe_overlappings == 0 && index == 0) {
-                // if subscribe first read, return null and make subscribe wait for next new message
-                return std::make_tuple("", this->meta_.overlapping_turns, this->meta_.index_offset);
+                if (!first_read) {
+                    // if subscribe not first read, return the latest message
+                    int meta_index_offset = this->meta_.index_offset;
+                    if (meta_index_offset == 0) {
+                        return std::make_tuple(this->circle_[this->max_size_-1], this->meta_.overlapping_turns, this->meta_.index_offset);
+                    } else {
+                        return std::make_tuple(this->circle_[meta_index_offset-1], this->meta_.overlapping_turns, this->meta_.index_offset);
+                    }
+                } else {
+                    // if subscribe first read, return null and make subscribe wait for next new message
+                    return std::make_tuple("", this->meta_.overlapping_turns, this->meta_.index_offset);
+                }
             } else {
                 return std::make_tuple(this->circle_[index], this->meta_.overlapping_turns, this->meta_.index_offset);
             }

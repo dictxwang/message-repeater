@@ -8,6 +8,7 @@ namespace subscriber {
 
         shared_ptr<bool> connection_alived = std::make_shared<bool>(true);
         thread write_thread([this, client_fd, client_ip, client_port, &config, &context, connection_alived] {
+            bool firstReadCircle = false;
             while (true) {
                 this_thread::sleep_for(chrono::microseconds(100));
                 if (!(*connection_alived)) {
@@ -33,7 +34,7 @@ namespace subscriber {
 
                         optional<shared_ptr<repeater::MessageCircle>> circle = context.get_message_circle_composite()->getCircle(topic);
                         if (circle.has_value()) {
-                            tuple<optional<string>, int, int> message_result = circle.value()->getMessageAndCircleMeta(meta->overlapping_turns, meta->index_offset);
+                            tuple<optional<string>, int, int> message_result = circle.value()->getMessageAndCircleMeta(meta->overlapping_turns, meta->index_offset, firstReadCircle);
                             auto message = std::get<0>(message_result);
                             if (message.has_value()) {
 
@@ -56,6 +57,7 @@ namespace subscriber {
                         }
                     }
                 }
+                firstReadCircle = false;
             }
             close(client_fd);
             this->killAlive(client_ip, client_port);

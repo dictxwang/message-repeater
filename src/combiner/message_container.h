@@ -43,7 +43,7 @@ namespace repeater {
 
     public:
         void append(string message);
-        tuple<optional<string>, int, int> getMessageAndCircleMeta(int subscribe_overlappings, int index);
+        tuple<optional<string>, int, int> getMessageAndCircleMeta(int subscribe_overlappings, int index, bool first_read);
 
         CircleMeta getMeta();
     };
