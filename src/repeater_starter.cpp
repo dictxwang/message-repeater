@@ -30,8 +30,9 @@ int main(int argc, char const *argv[]) {
     global_context.init(config);
 
     // init and start publisher bootstrap
+    // must new bootstrap out of condition scope
+    publisher::PublisherBootstrap publisherBootstrap;
     if (!config.disable_accept_publisher) {
-        publisher::PublisherBootstrap publisherBootstrap;
         publisherBootstrap.init(connection::SERVER_ROLE_PUBLISHER, config.publisher_listen_address, config.publisher_listen_port, config.publisher_max_connection);
         publisherBootstrap.start(config, global_context);
     }
