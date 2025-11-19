@@ -33,6 +33,7 @@
         "Sample0002"
     ],
 
+    "enable_accept_publisher": true,
     "publisher_listen_address": "127.0.0.1",
     "publisher_listen_port": 10001,
     "publisher_max_connection": 10,

@@ -37,6 +37,7 @@ namespace repeater {
         vector<string> layer_subscribe_addresses;
         vector<string> layer_subscribe_topics;
 
+        bool enable_accept_publisher;
         string publisher_listen_address;
         int publisher_listen_port;
         int publisher_max_connection;

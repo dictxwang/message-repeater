@@ -30,9 +30,11 @@ int main(int argc, char const *argv[]) {
     global_context.init(config);
 
     // init and start publisher bootstrap
-    publisher::PublisherBootstrap publisherBootstrap;
-    publisherBootstrap.init(connection::SERVER_ROLE_PUBLISHER, config.publisher_listen_address, config.publisher_listen_port, config.publisher_max_connection);
-    publisherBootstrap.start(config, global_context);
+    if (config.enable_accept_publisher) {
+        publisher::PublisherBootstrap publisherBootstrap;
+        publisherBootstrap.init(connection::SERVER_ROLE_PUBLISHER, config.publisher_listen_address, config.publisher_listen_port, config.publisher_max_connection);
+        publisherBootstrap.start(config, global_context);
+    }
 
     // init and start subscriber bootstrap
     subscriber::SubscriberBootstrap subscriberBootstrap;
@@ -40,10 +42,14 @@ int main(int argc, char const *argv[]) {
     subscriberBootstrap.start(config, global_context);
 
     // init and start layer subscribe
-    layer::start_layer_replay(config, global_context);
+    if (config.enable_layer_subscribe) {
+        layer::start_layer_replay(config, global_context);
+    }
 
     // start watchdog
-    repeater::start_watchdog(config, global_context);
+    if (config.enable_run_watchdog) {
+        repeater::start_watchdog(config, global_context);
+    }
 
     while(true) {
         // std::cout << "repeator starter keep running" << std::endl;

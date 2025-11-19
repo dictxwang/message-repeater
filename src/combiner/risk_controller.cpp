@@ -5,13 +5,9 @@ using namespace std;
 namespace repeater {
 
     void start_watchdog(RepeaterConfig& config, GlobalContext& context) {
-        if (!config.enable_run_watchdog) {
-            warn_log("not enable run watchdog");
-        } else {
-            thread circle_thead(watch_connections_and_circles, ref(config), ref(context));
-            circle_thead.detach();
-            info_log("[watchdog] start thread of watching topic circles and bootstrap connections");
-        }
+        thread circle_thead(watch_connections_and_circles, ref(config), ref(context));
+        circle_thead.detach();
+        info_log("[watchdog] start thread of watching topic circles and bootstrap connections");
     }
 
     void watch_connections_and_circles(RepeaterConfig& config, GlobalContext& context) {

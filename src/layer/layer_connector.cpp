@@ -9,10 +9,6 @@ namespace layer {
 
     void start_layer_replay(repeater::RepeaterConfig &config, repeater::GlobalContext &context) {
 
-        if (!context.is_enable_layer_subscribe()) {
-            info_log("not enable layer subscribe");
-            return;
-        }
         if (context.get_layer_subscribe_topics().size() == 0 || context.get_layer_subscribe_addresses().size() == 0) {
             warn_log("no support topic or address to layer subscribe");
             return;
@@ -32,7 +28,7 @@ namespace layer {
         for (string address : context.get_layer_subscribe_addresses()) {
             thread work_thread(layer_replay_work, ref(config), ref(context), address);
             work_thread.detach();
-            info_log("start layer replay word thread for address {}", address);
+            info_log("start layer replay work thread for address {}", address);
         }
     }
 

@@ -37,6 +37,7 @@ namespace repeater {
             this->layer_subscribe_topics.push_back(topic.asString());
         }
 
+        this->enable_accept_publisher = this->doc_["enable_accept_publisher"].asBool();
         this->publisher_listen_address = this->doc_["publisher_listen_address"].asString();
         this->publisher_listen_port = this->doc_["publisher_listen_port"].asInt();
         this->publisher_max_connection = this->doc_["publisher_max_connection"].asInt();
