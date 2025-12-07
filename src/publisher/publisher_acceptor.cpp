@@ -113,6 +113,7 @@ namespace publisher {
 
                 if (context.get_message_circle_composite()->createCircleIfAbsent(topic_buffer.data(), config.max_topic_circle_size)) {
                     context.get_message_circle_composite()->appendMessageToCircle(topic_buffer.data(), message_text);
+                    context.push_new_message_topic(topic_buffer.data());
                 } else {
                     warn_log("cannot create circle for {} {}", topic_buffer.data(), message_text);
                 }

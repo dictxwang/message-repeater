@@ -83,4 +83,20 @@ namespace repeater {
         }
         return roles;
     }
+
+    void GlobalContext::push_new_message_topic(string topic) {
+        std::unique_lock<std::shared_mutex> w_lock((*this->rw_lock_));
+        this->message_topic_queue.push(topic);
+    }
+
+    optional<string> GlobalContext::pop_message_topic() {
+        std::unique_lock<std::shared_mutex> w_lock((*this->rw_lock_));
+        if (this->message_topic_queue.empty()) {
+            return nullopt;
+        } else {
+            string topic = this->message_topic_queue.front(); 
+            this->message_topic_queue.pop();
+            return topic;
+        }
+    }
 }

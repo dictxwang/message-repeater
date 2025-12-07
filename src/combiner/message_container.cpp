@@ -193,6 +193,7 @@ namespace repeater {
 
     optional<shared_ptr<ConsumeRecord>> ConsumeRecordComposite::getRecord(string client_ip, int client_port) {
 
+        std::shared_lock<std::shared_mutex> w_lock(this->rw_lock_);
         string key = client_ip + ":" + std::to_string(client_port);
         auto record = this->consume_records_.find(key);
         if (record == this->consume_records_.end()) {
@@ -204,6 +205,7 @@ namespace repeater {
 
     void ConsumeRecordComposite::removeRecord(string client_ip, int client_port) {
 
+        std::unique_lock<std::shared_mutex> w_lock(this->rw_lock_);
         string key = client_ip + ":" + std::to_string(client_port);
         auto record = this->consume_records_.find(key);
         if (record != this->consume_records_.end()) {

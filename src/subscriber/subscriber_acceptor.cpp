@@ -4,66 +4,180 @@ using namespace std;
 
 namespace subscriber {
 
+    void SubscriberBootstrap::startMessageDispatch(repeater::GlobalContext &context) {
+        
+        thread dispatch_thread([this, &context] {
+
+            while (true) {
+                this_thread::sleep_for(chrono::microseconds(10));
+                auto topic = context.pop_message_topic();
+                if (!topic.has_value()) {
+                    continue;
+                }
+                this->dispatchMessage(topic.value());
+            }
+        });
+        dispatch_thread.detach();
+        info_log("subscriber start message dispatch thread");
+    }
+
+    void SubscriberBootstrap::dispatchMessage(string topic) {
+        // TODO
+    }
+
     void SubscriberBootstrap::acceptHandle(repeater::RepeaterConfig &config, repeater::GlobalContext &context, int client_fd, string client_ip, int client_port) {
 
         shared_ptr<bool> connection_alived = std::make_shared<bool>(true);
-        thread write_thread([this, client_fd, client_ip, client_port, &config, &context, connection_alived] {
-            bool firstReadCircle = true;
-            while (true) {
-                this_thread::sleep_for(chrono::microseconds(100));
-                if (!(*connection_alived)) {
-                    break;
-                }
-                if (!this->isConnectionExists(client_ip, client_port)) {
-                    info_log("subscriber connection not exists for {}:{}", client_ip, client_port);
-                    break;
-                }
-                if (!this->isSubscribed(client_ip, client_port)) {
-                    continue;
-                }
+        unordered_map<string, bool> firstReadCircle;
+        repeater::EventLoopWorker eventLoop;
 
-                optional<shared_ptr<repeater::ConsumeRecord>> record = context.get_consume_record_composite()->getRecord(client_ip, client_port);
-                if (!record.has_value()) {
-                    break;
-                }
+        EventWorkArguments arguments = {
+            &eventLoop,
+            this,
+            client_fd,
+            client_ip,
+            client_port,
+            config,
+            context,
+            connection_alived,
+            firstReadCircle,
+        };
+        
+        eventLoop.init([](evutil_socket_t ev_fd, short flags, void * args){
+            EventWorkArguments* context = static_cast<EventWorkArguments*>(args);
 
-                for (string topic : record.value()->getTopics()) {
+            vector<string> topics = context->eventLoop->popWorks();
+            if (topics.size() == 0) {
+                return;
+            }
 
-                    optional<repeater::CircleMeta> meta = record.value()->getMeta(topic);
-                    if (meta.has_value()) {
+            optional<shared_ptr<repeater::ConsumeRecord>> record = context->context.get_consume_record_composite()->getRecord(context->client_ip, context->client_port);
+            if (!record.has_value()) {
+                return;
+            }
 
-                        optional<shared_ptr<repeater::MessageCircle>> circle = context.get_message_circle_composite()->getCircle(topic);
-                        if (circle.has_value()) {
-                            tuple<optional<string>, int, int> message_result = circle.value()->getMessageAndCircleMeta(meta->overlapping_turns, meta->index_offset, firstReadCircle);
-                            auto message = std::get<0>(message_result);
-                            if (message.has_value()) {
+            for (string topic : record.value()->getTopics()) {
 
-                                if (message.value().size() > 0) {
-                                    // write message to client
-                                    if (!this->sendSocketData(client_fd, topic, message.value())) {
-                                        // write fail, remove subscribed
-                                        this->removeSubscribed(client_ip, client_port);
+                optional<repeater::CircleMeta> meta = record.value()->getMeta(topic);
+                if (meta.has_value()) {
 
-                                        warn_log("subscriber write fail and remove subscribed for {}:{}", client_ip, client_port);
-                                        break;
-                                    }
+                    bool firstReadCircle = false;
+                    if (context->firstReadCircle.find(topic) == context->firstReadCircle.end()) {
+                        firstReadCircle = true;
+                        context->firstReadCircle[topic] = true;
+                    }
+                    optional<shared_ptr<repeater::MessageCircle>> circle = context->context.get_message_circle_composite()->getCircle(topic);
+                    if (circle.has_value()) {
+                        tuple<optional<string>, int, int> message_result = circle.value()->getMessageAndCircleMeta(meta->overlapping_turns, meta->index_offset, firstReadCircle);
+                        auto message = std::get<0>(message_result);
+                        if (message.has_value()) {
+
+                            if (message.value().size() > 0) {
+                                // write message to client
+                                if (context->subscriber->sendSocketData(context->client_fd, topic, message.value())) {
+                                    // write fail, remove subscribed
+                                    context->subscriber->removeSubscribed(context->client_ip, context->client_port);
+
+                                    warn_log("subscriber write fail and remove subscribed for {}:{}", context->client_ip, context->client_port);
+                                    break;
                                 }
-
-                                // update record
-                                int producer_overlapping = std::get<1>(message_result);
-                                int producer_index_offset = std::get<2>(message_result);
-                                record.value()->updateMeta(topic, producer_overlapping, producer_index_offset);
                             }
+
+                            // update record
+                            int producer_overlapping = std::get<1>(message_result);
+                            int producer_index_offset = std::get<2>(message_result);
+                            record.value()->updateMeta(topic, producer_overlapping, producer_index_offset);
                         }
                     }
                 }
-                firstReadCircle = false;
             }
-            close(client_fd);
-            this->killAlive(client_ip, client_port);
-            (*connection_alived) = false;
+        }, &arguments);
+
+        thread write_thread([&eventLoop, &arguments] {
+
+            eventLoop.run();
+
+            while (true) {
+                this_thread::sleep_for(chrono::milliseconds(1));
+                if (!(*arguments.connection_alived)) {
+                    break;
+                }
+                if (!arguments.subscriber->isConnectionExists(arguments.client_ip, arguments.client_port)) {
+                    info_log("subscriber connection not exists for {}:{}", arguments.client_ip, arguments.client_port);
+                    break;
+                }
+                if (!arguments.subscriber->isSubscribed(arguments.client_ip, arguments.client_port)) {
+                    continue;
+                }
+
+                optional<shared_ptr<repeater::ConsumeRecord>> record = arguments.context.get_consume_record_composite()->getRecord(arguments.client_ip, arguments.client_port);
+                if (!record.has_value()) {
+                    break;
+                }
+            }
+            close(arguments.client_fd);
+            arguments.subscriber->killAlive(arguments.client_ip, arguments.client_port);
+            (*arguments.connection_alived) = false;
         });
         write_thread.detach();
+
+        // thread write_thread([this, client_fd, client_ip, client_port, &config, &context, connection_alived] {
+        //     bool firstReadCircle = true;
+        //     while (true) {
+        //         this_thread::sleep_for(chrono::microseconds(100));
+        //         if (!(*connection_alived)) {
+        //             break;
+        //         }
+        //         if (!this->isConnectionExists(client_ip, client_port)) {
+        //             info_log("subscriber connection not exists for {}:{}", client_ip, client_port);
+        //             break;
+        //         }
+        //         if (!this->isSubscribed(client_ip, client_port)) {
+        //             continue;
+        //         }
+
+        //         optional<shared_ptr<repeater::ConsumeRecord>> record = context.get_consume_record_composite()->getRecord(client_ip, client_port);
+        //         if (!record.has_value()) {
+        //             break;
+        //         }
+
+        //         for (string topic : record.value()->getTopics()) {
+
+        //             optional<repeater::CircleMeta> meta = record.value()->getMeta(topic);
+        //             if (meta.has_value()) {
+
+        //                 optional<shared_ptr<repeater::MessageCircle>> circle = context.get_message_circle_composite()->getCircle(topic);
+        //                 if (circle.has_value()) {
+        //                     tuple<optional<string>, int, int> message_result = circle.value()->getMessageAndCircleMeta(meta->overlapping_turns, meta->index_offset, firstReadCircle);
+        //                     auto message = std::get<0>(message_result);
+        //                     if (message.has_value()) {
+
+        //                         if (message.value().size() > 0) {
+        //                             // write message to client
+        //                             if (!this->sendSocketData(client_fd, topic, message.value())) {
+        //                                 // write fail, remove subscribed
+        //                                 this->removeSubscribed(client_ip, client_port);
+
+        //                                 warn_log("subscriber write fail and remove subscribed for {}:{}", client_ip, client_port);
+        //                                 break;
+        //                             }
+        //                         }
+
+        //                         // update record
+        //                         int producer_overlapping = std::get<1>(message_result);
+        //                         int producer_index_offset = std::get<2>(message_result);
+        //                         record.value()->updateMeta(topic, producer_overlapping, producer_index_offset);
+        //                     }
+        //                 }
+        //             }
+        //         }
+        //         firstReadCircle = false;
+        //     }
+        //     close(client_fd);
+        //     this->killAlive(client_ip, client_port);
+        //     (*connection_alived) = false;
+        // });
+        // write_thread.detach();
 
         thread read_thread([this, client_fd, client_ip, client_port, &config, &context, connection_alived] {
             size_t HEADER_SIZE = 4;
@@ -161,6 +275,9 @@ namespace subscriber {
                             // success
                             if (this->sendSocketData(client_fd, connection::MESSAGE_OP_TOPIC_SUBSCRIBE, "ok")) {
                                 this->putSubscribed(client_ip, client_port);
+                                for (string topic : topics) {
+                                    this->putTopicConnection(topic, client_ip, client_port);
+                                }
                                 info_log("client success to subscribe: client_ip={},client_port={}", client_ip, client_port);
                             }
                         } else {
@@ -183,6 +300,7 @@ namespace subscriber {
     void SubscriberBootstrap::clearConnectionResource(repeater::GlobalContext &context, string client_ip, int client_port) {
         context.get_consume_record_composite()->removeRecord(client_ip, client_port);
         this->removeSubscribed(client_ip, client_port);
+        this->releaseConnectionEventData(client_ip, client_port);
     }
 
     vector<string> SubscriberBootstrap::parseSubscribeTopics(repeater::GlobalContext &context, string message_body) {
@@ -215,18 +333,75 @@ namespace subscriber {
     }
 
     void SubscriberBootstrap::putSubscribed(string client_ip, int client_port) {
+
+        std::unique_lock<std::shared_mutex> w_lock(this->rw_lock_);
         string key = client_ip + ":" + std::to_string(client_port);
-        this->connection_subscribed[key] = true;
+        this->connection_subscribed_[key] = true;
     }
 
     void SubscriberBootstrap::removeSubscribed(string client_ip, int client_port) {
+
+        std::unique_lock<std::shared_mutex> w_lock(this->rw_lock_);
         string key = client_ip + ":" + std::to_string(client_port);
-        this->connection_subscribed.erase(key);
+        this->connection_subscribed_.erase(key);
     }
 
     bool SubscriberBootstrap::isSubscribed(string client_ip, int client_port) {
+
+        std::shared_lock<std::shared_mutex> w_lock(this->rw_lock_);
         string key = client_ip + ":" + std::to_string(client_port);
-        auto result = this->connection_subscribed.find(key);
-        return result != this->connection_subscribed.end() && result->second == true;
+        auto result = this->connection_subscribed_.find(key);
+        return result != this->connection_subscribed_.end() && result->second == true;
+    }
+
+    void SubscriberBootstrap::putConnectionEventLoop(string client_ip, int client_port, repeater::EventLoopWorker *eventWork) {
+
+        std::unique_lock<std::shared_mutex> w_lock(this->rw_lock_);
+        string key = client_ip + ":" + std::to_string(client_port);
+        this->connection_event_loop_map_[key] = eventWork;
+    }
+
+    void SubscriberBootstrap::putTopicConnection(string topic, string client_ip, int client_port) {
+
+        std::unique_lock<std::shared_mutex> w_lock(this->rw_lock_);
+        string connection = client_ip + ":" + std::to_string(client_port);
+        auto connections = this->topic_connection_map_.find(topic);
+        if (connections != this->topic_connection_map_.end()) {
+            connections->second.push_back(connection);
+            this->topic_connection_map_[topic] = connections->second;
+        } else {
+            vector<string> values;
+            values.push_back(connection);
+            this->topic_connection_map_[topic] = values;
+        }
+    }
+
+    void SubscriberBootstrap::releaseConnectionEventData(string client_ip, int client_port) {
+
+        std::unique_lock<std::shared_mutex> w_lock(this->rw_lock_);
+        string key = client_ip + ":" + std::to_string(client_port);
+        auto eventLoop = this->connection_event_loop_map_.find(key);
+        if (eventLoop != this->connection_event_loop_map_.end()) {
+            eventLoop->second->stop();
+            this->connection_event_loop_map_.erase(key);
+        }
+
+        vector<string> topics;
+        for (auto [topic, _] : this->topic_connection_map_) {
+            topics.push_back(topic);
+        }
+        for (string topic : topics) {
+            auto connections = this->topic_connection_map_.find(topic);
+            if (connections != this->topic_connection_map_.end()) {
+                vector<string> remainConnctions;
+                for (string connection : connections->second) {
+                    if (connection != key) {
+                        remainConnctions.push_back(connection);
+                    }
+                }
+                this->topic_connection_map_[topic] = remainConnctions;
+            }
+        }
+        warn_log("subscriber release and remove event data for {}:{}", client_ip, client_port);
     }
 }

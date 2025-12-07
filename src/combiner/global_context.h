@@ -3,6 +3,8 @@
 
 #include <set>
 #include <vector>
+#include <queue>
+#include <optional>
 #include <unordered_map>
 #include <mutex>
 #include <shared_mutex>
@@ -32,6 +34,8 @@ namespace repeater {
         shared_ptr<unordered_map<string, bool>> bootstrap_connections_full_status;
         shared_ptr<shared_mutex> rw_lock_;
 
+        queue<string> message_topic_queue;
+
     public:
         void init(RepeaterConfig& config);
 
@@ -46,6 +50,9 @@ namespace repeater {
 
         void update_connections_full(string role, bool fulled);
         vector<string> get_connections_full_roles();
+
+        void push_new_message_topic(string topic);
+        optional<string> pop_message_topic();
     };
 }
 #endif
