@@ -11,7 +11,7 @@ namespace subscriber {
 
     struct EventWorkArguments {
         repeater::EventLoopWorker* eventLoop;
-        SubscriberBootstrap* subscriber;
+        subscriber::SubscriberBootstrap* subscriber;
         int client_fd;
         string client_ip;
         int client_port;
