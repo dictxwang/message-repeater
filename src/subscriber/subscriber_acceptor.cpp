@@ -39,6 +39,8 @@ namespace subscriber {
                 std::cout << "<<<<< 004" << std::endl;
                 event_loop->second->submitWork(topic);
                 std::cout << "<<<<< 005" << std::endl;
+                evuser_trigger(event_loop->second->getWorkEvent());
+                std::cout << "<<<<< 006" << std::endl;
                 info_log("[debug] submit work of {} to {}", topic, connection);
             }
         }

@@ -46,6 +46,7 @@ namespace repeater {
         vector<string> popWorks();
         void run();
         void stop();
+        event* getWorkEvent();
     };
 }
 
