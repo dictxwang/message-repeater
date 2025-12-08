@@ -84,6 +84,8 @@ add_library(layer ${LIB_LAYER_SRC})
 FILE(GLOB_RECURSE LIB_COMBINER_SRC RELATIVE ${CMAKE_SOURCE_DIR}
     "src/combiner/*")
 add_library(combiner ${LIB_COMBINER_SRC})
+target_include_directories(combiner PRIVATE ${LIBEVENT_INCLUDE_DIRS})
+target_link_libraries(combiner PRIVATE ${LIBEVENT_LIBRARY})
 
 add_executable(${STARTER_REPEATER} "src/repeater_starter.cpp")
 target_link_libraries(${STARTER_REPEATER}

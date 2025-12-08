@@ -4,7 +4,7 @@ namespace repeater {
 
     void EventLoopWorker::init(event_callback_fn callback, void * args) {
         base = event_base_new();
-        work_event = evuser_new(base, callback, this);
+        work_event = evuser_new(base, callback, args);
         event_add(work_event, nullptr);
     }
 
@@ -34,5 +34,9 @@ namespace repeater {
 
     void EventLoopWorker::stop() {
         event_base_loopbreak(base);
+    }
+
+    event* EventLoopWorker::getWorkEvent() {
+        return this->work_event;
     }
 }

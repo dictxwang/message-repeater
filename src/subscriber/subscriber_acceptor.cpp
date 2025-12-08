@@ -11,7 +11,7 @@ namespace subscriber {
             while (true) {
                 this_thread::sleep_for(chrono::microseconds(10));
                 auto topics = context.pop_message_topics();
-                if (!topics.size() == 0) {
+                if (topics.size() == 0) {
                     continue;
                 }
                 for (string topic : topics) {
@@ -34,6 +34,7 @@ namespace subscriber {
             auto event_loop = this->connection_event_loop_map_.find(connection);
             if (event_loop != this->connection_event_loop_map_.end()) {
                 event_loop->second->submitWork(topic);
+                evuser_trigger(event_loop->second->getWorkEvent());
                 info_log("[debug] submit work of {} to {}", topic, connection);
             }
         }
@@ -107,7 +108,7 @@ namespace subscriber {
             }
         }, &arguments);
 
-        thread write_thread([&eventLoop, &arguments] {
+        thread write_thread([&eventLoop, arguments] {
 
             eventLoop.run();
             info_log("[debug] start event loop run for {}:{}", arguments.client_ip, arguments.client_port);
@@ -117,10 +118,12 @@ namespace subscriber {
                 if (!(*arguments.connection_alived)) {
                     break;
                 }
+                
                 if (!arguments.subscriber->isConnectionExists(arguments.client_ip, arguments.client_port)) {
                     info_log("subscriber connection not exists for {}:{}", arguments.client_ip, arguments.client_port);
                     break;
                 }
+                
                 if (!arguments.subscriber->isSubscribed(arguments.client_ip, arguments.client_port)) {
                     continue;
                 }
@@ -418,6 +421,6 @@ namespace subscriber {
                 this->topic_connection_map_[topic] = remainConnctions;
             }
         }
-        warn_log("subscriber release and remove event data for {}:{}", client_ip, client_port);
+        info_log("subscriber release and remove event loop for {}:{}", client_ip, client_port);
     }
 }

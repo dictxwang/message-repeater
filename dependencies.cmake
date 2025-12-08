@@ -22,6 +22,14 @@ link_directories(
 find_package(CURL REQUIRED)
 # Find OpenSSL
 find_package(OpenSSL REQUIRED)
+# Find Event
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(LIBEVENT REQUIRED libevent)
+
+if("${LIBEVENT_LIBRARY}" STREQUAL "")
+    set(LIBEVENT_LIBRARY "${CUSTOM_LIB_DIR}/libevent.a")
+endif()
+
 
 FIND_LIBRARY(_LIB_SPDLOG
     NAMES spdlog
