@@ -17,7 +17,7 @@ namespace subscriber {
     private:
         shared_mutex rw_lock_;
         unordered_map<string, bool> connection_subscribed_;
-        unordered_map<string, repeater::EventLoopWorker*> connection_event_loop_map_;
+        unordered_map<string, shared_ptr<repeater::EventLoopWorker>> connection_event_loop_map_;
         unordered_map<string, vector<string>> topic_connection_map_;
 
 
@@ -35,13 +35,13 @@ namespace subscriber {
         void removeSubscribed(string client_ip, int client_port);
         bool isSubscribed(string client_ip, int client_port);
 
-        void putConnectionEventLoop(string client_ip, int client_port, repeater::EventLoopWorker *eventWork);
+        void putConnectionEventLoop(string client_ip, int client_port, shared_ptr<repeater::EventLoopWorker> eventWork);
         void putTopicConnection(string topic, string client_ip, int client_port);
         void releaseConnectionEventData(string client_ip, int client_port);
     };
 
     struct EventWorkArguments {
-        repeater::EventLoopWorker *eventLoop;
+        shared_ptr<repeater::EventLoopWorker> eventLoop;
         SubscriberBootstrap *subscriber;
         int client_fd;
         string client_ip;

@@ -39,6 +39,9 @@ namespace subscriber {
                 std::cout << "<<<<< 004" << std::endl;
                 event_loop->second->submitWork(topic);
                 std::cout << "<<<<< 005" << std::endl;
+                if (event_loop->second->getWorkEvent() != nullptr) {
+                    std::cout << "work event is not null" << std::endl;
+                }
                 evuser_trigger(event_loop->second->getWorkEvent());
                 std::cout << "<<<<< 006" << std::endl;
                 info_log("[debug] submit work of {} to {}", topic, connection);
@@ -50,10 +53,10 @@ namespace subscriber {
 
         shared_ptr<bool> connection_alived = std::make_shared<bool>(true);
         unordered_map<string, bool> firstReadCircle;
-        repeater::EventLoopWorker eventLoop;
+        shared_ptr<repeater::EventLoopWorker> eventLoop = std::make_shared<repeater::EventLoopWorker>();
 
         EventWorkArguments arguments = {
-            &eventLoop,
+            eventLoop,
             this,
             client_fd,
             client_ip,
@@ -64,7 +67,7 @@ namespace subscriber {
             firstReadCircle,
         };
         
-        eventLoop.init([](evutil_socket_t ev_fd, short flags, void * args){
+        eventLoop->init([](evutil_socket_t ev_fd, short flags, void * args){
             EventWorkArguments* arguments = static_cast<EventWorkArguments*>(args);
 
             vector<string> topics = arguments->eventLoop->popWorks();
@@ -114,10 +117,10 @@ namespace subscriber {
             }
         }, &arguments);
 
-        this->putConnectionEventLoop(client_ip, client_port, &eventLoop);
+        this->putConnectionEventLoop(client_ip, client_port, eventLoop);
 
         thread write_thread([&eventLoop, arguments] {
-            eventLoop.run();
+            eventLoop->run();
             info_log("[debug] start event loop run for {}:{}", arguments.client_ip, arguments.client_port);
 
             while (true) {
@@ -379,7 +382,7 @@ namespace subscriber {
         return result != this->connection_subscribed_.end() && result->second == true;
     }
 
-    void SubscriberBootstrap::putConnectionEventLoop(string client_ip, int client_port, repeater::EventLoopWorker *eventWork) {
+    void SubscriberBootstrap::putConnectionEventLoop(string client_ip, int client_port, shared_ptr<repeater::EventLoopWorker> eventWork) {
 
         std::unique_lock<std::shared_mutex> w_lock(this->rw_lock_);
         string key = client_ip + ":" + std::to_string(client_port);
