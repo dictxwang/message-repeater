@@ -4,7 +4,6 @@
 #include <set>
 #include <vector>
 #include <queue>
-#include <optional>
 #include <unordered_map>
 #include <mutex>
 #include <shared_mutex>
@@ -52,7 +51,7 @@ namespace repeater {
         vector<string> get_connections_full_roles();
 
         void push_new_message_topic(string topic);
-        optional<string> pop_message_topic();
+        vector<string> pop_message_topics();
     };
 }
 #endif

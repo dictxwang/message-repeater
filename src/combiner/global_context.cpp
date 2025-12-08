@@ -89,14 +89,18 @@ namespace repeater {
         this->message_topic_queue.push(topic);
     }
 
-    optional<string> GlobalContext::pop_message_topic() {
+    vector<string> GlobalContext::pop_message_topics() {
         std::unique_lock<std::shared_mutex> w_lock((*this->rw_lock_));
+        vector<string> topics;
         if (this->message_topic_queue.empty()) {
-            return nullopt;
+            return topics;
         } else {
-            string topic = this->message_topic_queue.front(); 
-            this->message_topic_queue.pop();
-            return topic;
+            while (!this->message_topic_queue.empty()) {
+                string topic = this->message_topic_queue.front(); 
+                this->message_topic_queue.pop();
+                topics.push_back(topic);
+            }
+            return topics;
         }
     }
 }
