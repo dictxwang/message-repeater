@@ -25,16 +25,20 @@ namespace subscriber {
 
     void SubscriberBootstrap::dispatchMessage(string topic) {
         std::shared_lock<std::shared_mutex> w_lock(this->rw_lock_);
+        std::cout << "<<<<< 001" << std::endl;
         auto connections = this->topic_connection_map_.find(topic);
         if (connections == this->topic_connection_map_.end()) {
             return;
         }
+        std::cout << "<<<<< 002" << std::endl;
 
         for (string connection : connections->second) {
             auto event_loop = this->connection_event_loop_map_.find(connection);
+            std::cout << "<<<<< 003" << std::endl;
             if (event_loop != this->connection_event_loop_map_.end()) {
+                std::cout << "<<<<< 004" << std::endl;
                 event_loop->second->submitWork(topic);
-                evuser_trigger(event_loop->second->getWorkEvent());
+                std::cout << "<<<<< 005" << std::endl;
                 info_log("[debug] submit work of {} to {}", topic, connection);
             }
         }
@@ -108,8 +112,9 @@ namespace subscriber {
             }
         }, &arguments);
 
-        thread write_thread([&eventLoop, arguments] {
+        this->putConnectionEventLoop(client_ip, client_port, &eventLoop);
 
+        thread write_thread([&eventLoop, arguments] {
             eventLoop.run();
             info_log("[debug] start event loop run for {}:{}", arguments.client_ip, arguments.client_port);
 
@@ -123,7 +128,7 @@ namespace subscriber {
                     info_log("subscriber connection not exists for {}:{}", arguments.client_ip, arguments.client_port);
                     break;
                 }
-                
+
                 if (!arguments.subscriber->isSubscribed(arguments.client_ip, arguments.client_port)) {
                     continue;
                 }

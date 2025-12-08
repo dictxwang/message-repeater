@@ -10,7 +10,7 @@ namespace repeater {
 
     void EventLoopWorker::submitWork(string topic) {
         {
-            std::lock_guard<std::mutex> lock(queue_mutex);
+            std::unique_lock<std::shared_mutex> w_lock(this->rw_lock_);
             topic_queue.push(topic);
         }
         evuser_trigger(work_event);
@@ -19,7 +19,7 @@ namespace repeater {
     vector<string> EventLoopWorker::popWorks() {
         vector<string> items;
         {
-            std::lock_guard<std::mutex> lock(queue_mutex);
+            std::unique_lock<std::shared_mutex> w_lock(this->rw_lock_);
             while (!topic_queue.empty()) {
                 items.push_back(topic_queue.front());
                 topic_queue.pop();
@@ -34,9 +34,5 @@ namespace repeater {
 
     void EventLoopWorker::stop() {
         event_base_loopbreak(base);
-    }
-
-    event* EventLoopWorker::getWorkEvent() {
-        return this->work_event;
     }
 }

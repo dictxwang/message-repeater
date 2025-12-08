@@ -38,7 +38,7 @@ namespace repeater {
         event_base* base;
         event* work_event;
         std::queue<string> topic_queue;
-        std::mutex queue_mutex;
+        shared_mutex rw_lock_;
 
     public:
         void init(event_callback_fn callback, void * args);
@@ -46,7 +46,6 @@ namespace repeater {
         vector<string> popWorks();
         void run();
         void stop();
-        event* getWorkEvent();
     };
 }
 
