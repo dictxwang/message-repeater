@@ -1,5 +1,4 @@
 #include "message_event.h"
-#include <iostream>
 
 namespace repeater {
 
@@ -16,20 +15,16 @@ namespace repeater {
     }
 
     void EventLoopWorker::submitWork(string topic) {
-        std::cout << "submit 001" << std::endl;
         std::unique_lock<std::shared_mutex> w_lock(this->rw_lock_);
-        std::cout << "submit 002" << std::endl;
         this->topic_queue.push(topic);
-        std::cout << "submit 003" << std::endl;
     }
 
     vector<string> EventLoopWorker::popWorks() {
         vector<string> items;
-        std::cout << "pop 001" << std::endl;
         std::unique_lock<std::shared_mutex> w_lock(this->rw_lock_);
-        std::cout << "pop 002" << std::endl;
         while (!this->topic_queue.empty()) {
-            items.push_back(topic_queue.front());
+            string head = this->topic_queue.front();
+            items.push_back(head);
             this->topic_queue.pop();
         }
         return items;

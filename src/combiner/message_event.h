@@ -11,6 +11,7 @@
 #include <vector>
 #include <mutex>
 #include <shared_mutex>
+#include <iostream>
 #include "logger/logger.h"
 
 using namespace std;
@@ -18,11 +19,6 @@ using namespace std;
 namespace repeater {
 
     class EventLoopWorker {
-
-        // static void work_callback(evutil_socket_t fd, short what, void* arg) {
-        //     auto* worker = static_cast<EventLoopWorker*>(arg);
-        //     worker->processWork();
-        // }
 
     public:
         EventLoopWorker() {
@@ -34,6 +30,13 @@ namespace repeater {
             if (base) {
                 event_base_free(base);
             }
+            if (notify_pipe[0] != -1) {
+                close(notify_pipe[0]);
+            }
+            if (notify_pipe[1] != -1) {
+                close(notify_pipe[1]);
+            }
+            std::cout << "++++++++++++++ after destory method" << std::endl;
         }
 
     private:

@@ -49,7 +49,8 @@ namespace subscriber {
         repeater::RepeaterConfig &config;
         repeater::GlobalContext &context;
         shared_ptr<bool> connection_alived;
-        unordered_map<string, bool> firstReadCircle;
+        shared_ptr<repeater::ConsumeRecord> consumeRecord;
+        unordered_map<string, bool> circleFirstRead;
     };
 }
 

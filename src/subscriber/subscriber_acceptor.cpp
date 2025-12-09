@@ -25,23 +25,16 @@ namespace subscriber {
 
     void SubscriberBootstrap::dispatchMessage(string topic) {
         std::shared_lock<std::shared_mutex> w_lock(this->rw_lock_);
-        std::cout << "<<<<< 001" << std::endl;
         auto connections = this->topic_connection_map_.find(topic);
         if (connections == this->topic_connection_map_.end()) {
             return;
         }
-        std::cout << "<<<<< 002" << std::endl;
 
         for (string connection : connections->second) {
             auto event_loop = this->connection_event_loop_map_.find(connection);
-            std::cout << "<<<<< 003" << std::endl;
             if (event_loop != this->connection_event_loop_map_.end()) {
-                std::cout << "<<<<< 004" << std::endl;
                 event_loop->second->submitWork(topic);
-                std::cout << "<<<<< 005" << std::endl;
                 event_loop->second->notifyWork();
-                std::cout << "<<<<< 006" << std::endl;
-                info_log("[debug] submit work of {} to {}", topic, connection);
             }
         }
     }
@@ -49,7 +42,7 @@ namespace subscriber {
     void SubscriberBootstrap::acceptHandle(repeater::RepeaterConfig &config, repeater::GlobalContext &context, int client_fd, string client_ip, int client_port) {
 
         shared_ptr<bool> connection_alived = std::make_shared<bool>(true);
-        unordered_map<string, bool> firstReadCircle;
+        unordered_map<string, bool> circleFirstRead;
         shared_ptr<repeater::EventLoopWorker> eventLoop = std::make_shared<repeater::EventLoopWorker>();
 
         EventWorkArguments arguments = {
@@ -61,44 +54,61 @@ namespace subscriber {
             config,
             context,
             connection_alived,
-            firstReadCircle,
+            nullptr,
+            circleFirstRead,
         };
         
         eventLoop->init([](evutil_socket_t ev_fd, short flags, void * args){
             EventWorkArguments* arguments = static_cast<EventWorkArguments*>(args);
+
+            if (!arguments->connection_alived) {
+                return;
+            }
+            char buf;
+            // Read from pipe to clear it
+            while (read(ev_fd, &buf, 1) == 1) {}
+
+            if (arguments->consumeRecord == nullptr) {
+                //std::cout << "consumeRecord is nullptr " << arguments->client_ip << ":" << arguments->client_port << std::endl;
+                optional<shared_ptr<repeater::ConsumeRecord>> record = arguments->context.get_consume_record_composite()->getRecord(arguments->client_ip, arguments->client_port);
+                if (!record.has_value()) {
+                    return;
+                } else {
+                    arguments->consumeRecord = record.value();
+                }
+            }
 
             vector<string> topics = arguments->eventLoop->popWorks();
             if (topics.size() == 0) {
                 return;
             }
 
-            optional<shared_ptr<repeater::ConsumeRecord>> record = arguments->context.get_consume_record_composite()->getRecord(arguments->client_ip, arguments->client_port);
-            if (!record.has_value()) {
-                return;
-            }
 
-            for (string topic : record.value()->getTopics()) {
+            for (string topic : topics) {
 
-                optional<repeater::CircleMeta> meta = record.value()->getMeta(topic);
+                optional<repeater::CircleMeta> meta = arguments->consumeRecord->getMeta(topic);
                 if (meta.has_value()) {
 
                     bool firstReadCircle = false;
-                    if (arguments->firstReadCircle.find(topic) == arguments->firstReadCircle.end()) {
+                    if (arguments->circleFirstRead.find(topic) == arguments->circleFirstRead.end()) {
                         firstReadCircle = true;
-                        arguments->firstReadCircle[topic] = true;
+                        arguments->circleFirstRead[topic] = true;
                     }
                     optional<shared_ptr<repeater::MessageCircle>> circle = arguments->context.get_message_circle_composite()->getCircle(topic);
                     if (circle.has_value()) {
                         tuple<optional<string>, int, int> message_result = circle.value()->getMessageAndCircleMeta(meta->overlapping_turns, meta->index_offset, firstReadCircle);
                         auto message = std::get<0>(message_result);
+                        int producer_overlapping = std::get<1>(message_result);
+                        int producer_index_offset = std::get<2>(message_result);
+                    
                         if (message.has_value()) {
 
                             if (message.value().size() > 0) {
                                 // write message to client
-                                if (arguments->subscriber->sendSocketData(arguments->client_fd, topic, message.value())) {
+                                if (!arguments->subscriber->sendSocketData(arguments->client_fd, topic, message.value())) {
                                     // write fail, remove subscribed
                                     arguments->subscriber->removeSubscribed(arguments->client_ip, arguments->client_port);
-
+                                    (*arguments->connection_alived) = false;
                                     warn_log("subscriber write fail and remove subscribed for {}:{}", arguments->client_ip, arguments->client_port);
                                     break;
                                 }
@@ -107,7 +117,8 @@ namespace subscriber {
                             // update record
                             int producer_overlapping = std::get<1>(message_result);
                             int producer_index_offset = std::get<2>(message_result);
-                            record.value()->updateMeta(topic, producer_overlapping, producer_index_offset);
+                    
+                            arguments->consumeRecord->updateMeta(topic, producer_overlapping, producer_index_offset);
                         }
                     }
                 }
