@@ -4,12 +4,14 @@
 #include <event2/event.h>
 #include <functional>
 #include <signal.h>
+#include <unistd.h>
 #include <thread>
 #include <chrono>
 #include <queue>
 #include <vector>
 #include <mutex>
 #include <shared_mutex>
+#include "logger/logger.h"
 
 using namespace std;
 
@@ -37,6 +39,7 @@ namespace repeater {
     private:
         event_base* base;
         event* work_event;
+        int notify_pipe[2];
         std::queue<string> topic_queue;
         shared_mutex rw_lock_;
 
@@ -46,7 +49,7 @@ namespace repeater {
         vector<string> popWorks();
         void run();
         void stop();
-        event* getWorkEvent();
+        bool notifyWork();
     };
 }
 

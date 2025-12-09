@@ -39,10 +39,7 @@ namespace subscriber {
                 std::cout << "<<<<< 004" << std::endl;
                 event_loop->second->submitWork(topic);
                 std::cout << "<<<<< 005" << std::endl;
-                if (event_loop->second->getWorkEvent() != nullptr) {
-                    std::cout << "work event is not null" << std::endl;
-                }
-                evuser_trigger(event_loop->second->getWorkEvent());
+                event_loop->second->notifyWork();
                 std::cout << "<<<<< 006" << std::endl;
                 info_log("[debug] submit work of {} to {}", topic, connection);
             }

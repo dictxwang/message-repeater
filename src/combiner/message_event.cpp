@@ -4,8 +4,14 @@
 namespace repeater {
 
     void EventLoopWorker::init(event_callback_fn callback, void * args) {
+        if (pipe(this->notify_pipe) == -1) {
+            warn_log("fail to create pipe for event loop worker");
+        } else {
+            evutil_make_socket_nonblocking(this->notify_pipe[0]);
+            evutil_make_socket_nonblocking(this->notify_pipe[1]);
+        }
         this->base = event_base_new();
-        this->work_event = evuser_new(base, callback, args);
+        this->work_event = event_new(base, this->notify_pipe[0], EV_READ | EV_PERSIST, callback, args);
         event_add(work_event, nullptr);
     }
 
@@ -36,7 +42,13 @@ namespace repeater {
     void EventLoopWorker::stop() {
         event_base_loopbreak(this->base);
     }
-    event* EventLoopWorker::getWorkEvent() {
-        return this->work_event;
+    bool EventLoopWorker::notifyWork() {
+        char byte = 1;
+        if (write(notify_pipe[1], &byte, 1) != 1) {
+            warn_log("fail to notify worker");
+            return false;
+        } else {
+            return true;
+        }
     }
 }
