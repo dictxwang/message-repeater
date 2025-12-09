@@ -35,12 +35,31 @@ namespace repeater {
     }
 
     void EventLoopWorker::stop() {
+        // First, remove the persistent event
+        // if (this->work_event) {
+        //    event_del(this->work_event);
+        // }
+
+        // Then break the event loop
         event_base_loopbreak(this->base);
+
+        // Notify the event loop to wake up and process the break
+        // notifyWork();
     }
-    bool EventLoopWorker::notifyWork() {
+
+    bool EventLoopWorker::notifyStartWork() {
         char byte = 1;
         if (write(notify_pipe[1], &byte, 1) != 1) {
-            warn_log("fail to notify worker");
+            warn_log("fail to notify start worker");
+            return false;
+        } else {
+            return true;
+        }
+    }
+    bool EventLoopWorker::notifyStopWork() {
+        char byte = 5;
+        if (write(notify_pipe[1], &byte, 1) != 1) {
+            warn_log("fail to notify stop worker");
             return false;
         } else {
             return true;

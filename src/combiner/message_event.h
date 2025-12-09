@@ -11,7 +11,6 @@
 #include <vector>
 #include <mutex>
 #include <shared_mutex>
-#include <iostream>
 #include "logger/logger.h"
 
 using namespace std;
@@ -36,7 +35,6 @@ namespace repeater {
             if (notify_pipe[1] != -1) {
                 close(notify_pipe[1]);
             }
-            std::cout << "++++++++++++++ after destory method" << std::endl;
         }
 
     private:
@@ -52,7 +50,8 @@ namespace repeater {
         vector<string> popWorks();
         void run();
         void stop();
-        bool notifyWork();
+        bool notifyStartWork();
+        bool notifyStopWork();
     };
 }
 

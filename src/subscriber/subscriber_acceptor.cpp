@@ -34,7 +34,7 @@ namespace subscriber {
             auto event_loop = this->connection_event_loop_map_.find(connection);
             if (event_loop != this->connection_event_loop_map_.end()) {
                 event_loop->second->submitWork(topic);
-                event_loop->second->notifyWork();
+                event_loop->second->notifyStartWork();
             }
         }
     }
@@ -45,7 +45,7 @@ namespace subscriber {
         unordered_map<string, bool> circleFirstRead;
         shared_ptr<repeater::EventLoopWorker> eventLoop = std::make_shared<repeater::EventLoopWorker>();
 
-        EventWorkArguments arguments = {
+        EventWorkArguments* arguments = new EventWorkArguments{
             eventLoop,
             this,
             client_fd,
@@ -64,12 +64,21 @@ namespace subscriber {
             if (!arguments->connection_alived) {
                 return;
             }
+            if (!arguments->subscriber->isSubscribed(arguments->client_ip, arguments->client_port)) {
+                return;
+            }
+
             char buf;
             // Read from pipe to clear it
-            while (read(ev_fd, &buf, 1) == 1) {}
+            while (read(ev_fd, &buf, 1) == 1) {
+                if (buf == 5) {
+                    std::cout << "++++++++++++++ receive stop notify" << std::endl;
+                    arguments->eventLoop->stop();
+                    return;
+                }
+            }
 
             if (arguments->consumeRecord == nullptr) {
-                //std::cout << "consumeRecord is nullptr " << arguments->client_ip << ":" << arguments->client_port << std::endl;
                 optional<shared_ptr<repeater::ConsumeRecord>> record = arguments->context.get_consume_record_composite()->getRecord(arguments->client_ip, arguments->client_port);
                 if (!record.has_value()) {
                     return;
@@ -123,39 +132,48 @@ namespace subscriber {
                     }
                 }
             }
-        }, &arguments);
+        }, arguments);
 
         this->putConnectionEventLoop(client_ip, client_port, eventLoop);
 
-        thread write_thread([&eventLoop, arguments] {
+        thread event_thread([&eventLoop] {
+            std::cout << ">>>>> before event loop run" << std::endl;
             eventLoop->run();
-            info_log("[debug] start event loop run for {}:{}", arguments.client_ip, arguments.client_port);
+            std::cout << ">>>>> after event loop run" << std::endl;
+        });
+        event_thread.detach();
+
+        thread detecting_thread([&eventLoop, arguments] {
 
             while (true) {
                 this_thread::sleep_for(chrono::milliseconds(1));
-                if (!(*arguments.connection_alived)) {
+                if (!(*arguments->connection_alived)) {
                     break;
                 }
                 
-                if (!arguments.subscriber->isConnectionExists(arguments.client_ip, arguments.client_port)) {
-                    info_log("subscriber connection not exists for {}:{}", arguments.client_ip, arguments.client_port);
+                if (!arguments->subscriber->isConnectionExists(arguments->client_ip, arguments->client_port)) {
+                    info_log("subscriber connection not exists for {}:{}", arguments->client_ip, arguments->client_port);
                     break;
                 }
 
-                if (!arguments.subscriber->isSubscribed(arguments.client_ip, arguments.client_port)) {
+                if (!arguments->subscriber->isSubscribed(arguments->client_ip, arguments->client_port)) {
                     continue;
                 }
 
-                optional<shared_ptr<repeater::ConsumeRecord>> record = arguments.context.get_consume_record_composite()->getRecord(arguments.client_ip, arguments.client_port);
+                optional<shared_ptr<repeater::ConsumeRecord>> record = arguments->context.get_consume_record_composite()->getRecord(arguments->client_ip, arguments->client_port);
                 if (!record.has_value()) {
                     break;
                 }
             }
-            close(arguments.client_fd);
-            arguments.subscriber->killAlive(arguments.client_ip, arguments.client_port);
-            (*arguments.connection_alived) = false;
+            close(arguments->client_fd);
+            arguments->subscriber->killAlive(arguments->client_ip, arguments->client_port);
+            (*arguments->connection_alived) = false;
+            arguments->eventLoop->notifyStopWork();
+            std::cout << "++++++ after notify stop work" << std::endl;
+            delete arguments;  // Clean up the heap-allocated arguments
+            std::cout << "++++++++++++++ after delete arguments" << std::endl;
         });
-        write_thread.detach();
+        detecting_thread.detach();
 
         // thread write_thread([this, client_fd, client_ip, client_port, &config, &context, connection_alived] {
         //     bool firstReadCircle = true;
@@ -215,7 +233,7 @@ namespace subscriber {
         // });
         // write_thread.detach();
 
-        thread read_thread([this, client_fd, client_ip, client_port, &config, &context, connection_alived] {
+        thread reading_thread([this, client_fd, client_ip, client_port, &config, &context, connection_alived] {
             size_t HEADER_SIZE = 4;
             size_t MAX_MESSAGE_SIZE = 65536;
 
@@ -330,7 +348,7 @@ namespace subscriber {
             this->killAlive(client_ip, client_port);
             (*connection_alived) = false;
         });
-        read_thread.detach();
+        reading_thread.detach();
     }
 
     void SubscriberBootstrap::clearConnectionResource(repeater::GlobalContext &context, string client_ip, int client_port) {
@@ -420,7 +438,6 @@ namespace subscriber {
         if (eventLoop != this->connection_event_loop_map_.end()) {
             eventLoop->second->stop();
             this->connection_event_loop_map_.erase(key);
-            info_log("[debug] stop and remove event loop for {}:{}", client_ip, client_port);
         }
 
         vector<string> topics;
