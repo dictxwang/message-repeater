@@ -36,7 +36,7 @@ namespace repeater {
             if (this->notify_pipe[1] != -1) {
                 close(this->notify_pipe[1]);
             }
-            info_log("destroy event loop worker of {}", this->id);
+            info_log("destroy event loop worker which id is {}", this->id);
         }
 
     private:

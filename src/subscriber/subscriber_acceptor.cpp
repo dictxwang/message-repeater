@@ -65,7 +65,7 @@ namespace subscriber {
             // Read from pipe to clear it
             while (read(ev_fd, &buf, 1) == 1) {
                 if (buf == 5) {
-                    info_log("event loop receive stop notify for subscriber connection of {}:{}", arguments->client_ip, arguments->client_port);
+                    warn_log("event loop receive stop notify for subscriber connection of {}:{}", arguments->client_ip, arguments->client_port);
                     arguments->eventLoop->stop();
                     return;
                 }
@@ -152,7 +152,7 @@ namespace subscriber {
                 }
                 
                 if (!arguments->subscriber->isConnectionExists(arguments->client_ip, arguments->client_port)) {
-                    info_log("subscriber connection not exists for {}:{}", arguments->client_ip, arguments->client_port);
+                    warn_log("subscriber connection not exists for {}:{}", arguments->client_ip, arguments->client_port);
                     break;
                 }
 
@@ -455,6 +455,6 @@ namespace subscriber {
                 this->topic_connection_map_[topic] = remainConnctions;
             }
         }
-        info_log("subscriber release and remove event loop for {}:{}", client_ip, client_port);
+        info_log("subscriber release and remove event loop worker for {}:{}", client_ip, client_port);
     }
 }

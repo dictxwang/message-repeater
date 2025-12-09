@@ -13,7 +13,7 @@ namespace repeater {
         this->work_event = event_new(base, this->notify_pipe[0], EV_READ | EV_PERSIST, callback, args);
         event_add(work_event, nullptr);
         this->id = common_tools::get_current_micro_epoch();
-        info_log("create event loop worker of {}", this->id);
+        info_log("create event loop worker which id is {}", this->id);
     }
 
     void EventLoopWorker::submitWork(string topic) {
