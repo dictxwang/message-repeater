@@ -61,21 +61,21 @@ namespace subscriber {
         eventLoop->init([](evutil_socket_t ev_fd, short flags, void * args){
             EventWorkArguments* arguments = static_cast<EventWorkArguments*>(args);
 
+            char buf;
+            // Read from pipe to clear it
+            while (read(ev_fd, &buf, 1) == 1) {
+                if (buf == 5) {
+                    info_log("event loop receive stop notify for subscriber connection of {}:{}", arguments->client_ip, arguments->client_port);
+                    arguments->eventLoop->stop();
+                    return;
+                }
+            }
+
             if (!arguments->connection_alived) {
                 return;
             }
             if (!arguments->subscriber->isSubscribed(arguments->client_ip, arguments->client_port)) {
                 return;
-            }
-
-            char buf;
-            // Read from pipe to clear it
-            while (read(ev_fd, &buf, 1) == 1) {
-                if (buf == 5) {
-                    std::cout << "++++++++++++++ receive stop notify" << std::endl;
-                    arguments->eventLoop->stop();
-                    return;
-                }
             }
 
             if (arguments->consumeRecord == nullptr) {
@@ -136,10 +136,10 @@ namespace subscriber {
 
         this->putConnectionEventLoop(client_ip, client_port, eventLoop);
 
-        thread event_thread([&eventLoop] {
-            std::cout << ">>>>> before event loop run" << std::endl;
+        thread event_thread([&eventLoop, client_ip, client_port] {
+            info_log("event loop start run for subscriber connection of {}:{}", client_ip, client_port);
             eventLoop->run();
-            std::cout << ">>>>> after event loop run" << std::endl;
+            info_log("event loop stop run for subscriber connection of {}:{}", client_ip, client_port);
         });
         event_thread.detach();
 
@@ -167,11 +167,10 @@ namespace subscriber {
             }
             close(arguments->client_fd);
             arguments->subscriber->killAlive(arguments->client_ip, arguments->client_port);
-            (*arguments->connection_alived) = false;
             arguments->eventLoop->notifyStopWork();
-            std::cout << "++++++ after notify stop work" << std::endl;
+            (*arguments->connection_alived) = false;
+            this_thread::sleep_for(chrono::seconds(1));
             delete arguments;  // Clean up the heap-allocated arguments
-            std::cout << "++++++++++++++ after delete arguments" << std::endl;
         });
         detecting_thread.detach();
 

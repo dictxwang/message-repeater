@@ -12,6 +12,7 @@
 #include <mutex>
 #include <shared_mutex>
 #include "logger/logger.h"
+#include "util/common_tool.h"
 
 using namespace std;
 
@@ -23,25 +24,27 @@ namespace repeater {
         EventLoopWorker() {
         }
         ~EventLoopWorker() {
-            if (work_event) {
-                event_free(work_event);
+            if (this->work_event) {
+                event_free(this->work_event);
             }
-            if (base) {
-                event_base_free(base);
+            if (this->base) {
+                event_base_free(this->base);
             }
-            if (notify_pipe[0] != -1) {
-                close(notify_pipe[0]);
+            if (this->notify_pipe[0] != -1) {
+                close(this->notify_pipe[0]);
             }
-            if (notify_pipe[1] != -1) {
-                close(notify_pipe[1]);
+            if (this->notify_pipe[1] != -1) {
+                close(this->notify_pipe[1]);
             }
+            info_log("destroy event loop worker of {}", this->id);
         }
 
     private:
+        uint64_t id;
         event_base* base;
         event* work_event;
         int notify_pipe[2];
-        std::queue<string> topic_queue;
+        queue<string> topic_queue;
         shared_mutex rw_lock_;
 
     public:
