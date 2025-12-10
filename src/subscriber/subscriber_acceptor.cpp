@@ -57,17 +57,17 @@ namespace subscriber {
                     bool connection_broken = false;
                     if (!(*arguments->connection_alived)) {
                         connection_broken = true;
-                    } else if (!arguments->subscriber->isConnectionExists(arguments->client_ip, arguments->client_port)) {
+                    } else if (!this->isConnectionExists(arguments->client_ip, arguments->client_port)) {
                         warn_log("subscriber connection not exists for {}:{}", arguments->client_ip, arguments->client_port);
                         connection_broken = true;
-                    } else if (!arguments->subscriber->isSubscribed(arguments->client_ip, arguments->client_port)) {
+                    } else if (!this->isSubscribed(arguments->client_ip, arguments->client_port)) {
                         continue;
                     }
 
                     if (connection_broken) {
                         info_log("subscribe connection be detected has broken for {}:{}", arguments->client_ip, arguments->client_port);
                         close(arguments->client_fd);
-                        arguments->subscriber->killAlive(arguments->client_ip, arguments->client_port);
+                        this->killAlive(arguments->client_ip, arguments->client_port);
                         arguments->eventLoop->notifyStopWork();
                         (*arguments->connection_alived) = false;
                         arguments->detecting_finished = true;
@@ -161,7 +161,6 @@ namespace subscriber {
 
         shared_ptr<ConnectionDetectingArguments> detectingArguments = std::make_shared<ConnectionDetectingArguments>();
         detectingArguments->eventLoop = eventLoop;
-        detectingArguments->subscriber = this;
         detectingArguments->client_fd = client_fd;
         detectingArguments->client_ip = client_ip;
         detectingArguments->client_port = client_port;

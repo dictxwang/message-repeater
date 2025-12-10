@@ -11,7 +11,6 @@ namespace subscriber {
 
     struct ConnectionDetectingArguments {
         shared_ptr<repeater::EventLoopWorker> eventLoop;
-        SubscriberBootstrap *subscriber;
         int client_fd;
         string client_ip;
         int client_port;
