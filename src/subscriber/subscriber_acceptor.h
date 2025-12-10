@@ -9,6 +9,16 @@
 
 namespace subscriber {
 
+    struct ConnectionDetectingArguments {
+        shared_ptr<repeater::EventLoopWorker> eventLoop;
+        SubscriberBootstrap *subscriber;
+        int client_fd;
+        string client_ip;
+        int client_port;
+        shared_ptr<bool> connection_alived;
+        bool detecting_finished;
+    };
+
     class SubscriberBootstrap : public connection::AbstractBootstrap {
     public:
         SubscriberBootstrap() {};
@@ -48,17 +58,6 @@ namespace subscriber {
         void putTopicConnection(string topic, string client_ip, int client_port);
         void releaseConnectionEventData(string client_ip, int client_port);
     };
-
-    struct ConnectionDetectingArguments {
-        shared_ptr<repeater::EventLoopWorker> eventLoop;
-        SubscriberBootstrap *subscriber;
-        int client_fd;
-        string client_ip;
-        int client_port;
-        shared_ptr<bool> connection_alived;
-        bool detecting_finished;
-    };
-
 
     struct EventWorkArguments {
         shared_ptr<repeater::EventLoopWorker> eventLoop;
