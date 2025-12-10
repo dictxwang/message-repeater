@@ -114,7 +114,9 @@ namespace publisher {
                 if (context.get_message_circle_composite()->createCircleIfAbsent(topic_buffer.data(), config.max_topic_circle_size)) {
                     context.get_message_circle_composite()->appendMessageToCircle(topic_buffer.data(), message_text);
                     if (config.subscriber_enable_event_loop) {
-                        context.push_message_topic_for_event_loop(topic_buffer.data());
+                        // context.push_message_topic_for_event_loop(topic_buffer.data());
+                        context.submit_message_topic_to_event_loop(topic_buffer.data());
+                        context.notify_message_topic_to_event_loop();
                     }
                 } else {
                     warn_log("cannot create circle for {} {}", topic_buffer.data(), message_text);

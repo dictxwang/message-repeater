@@ -9,6 +9,7 @@
 #include <shared_mutex>
 #include "config/repeater_config.h"
 #include "message_container.h"
+#include "message_event.h"
 #include "tgbot/api.h"
 
 using namespace std;
@@ -31,9 +32,11 @@ namespace repeater {
         vector<string> layer_subscribe_addresses;
 
         shared_ptr<unordered_map<string, bool>> bootstrap_connections_full_status;
-        shared_ptr<shared_mutex> rw_lock_;
 
         queue<string> message_topics_for_event_loop;
+
+        shared_ptr<EventLoopWorker> dispatch_event_loop_worker_;
+        shared_ptr<shared_mutex> rw_lock_;
 
     public:
         void init(RepeaterConfig& config);
@@ -50,8 +53,11 @@ namespace repeater {
         void update_connections_full(string role, bool fulled);
         vector<string> get_connections_full_roles();
 
-        void push_message_topic_for_event_loop(string topic);
-        vector<string> pop_message_topics_for_event_loop();
+        shared_ptr<EventLoopWorker> get_dispatch_event_loop_worker();
+        void submit_message_topic_to_event_loop(string topic);
+        void notify_message_topic_to_event_loop();
+        // void push_message_topic_for_event_loop(string topic);
+        // vector<string> pop_message_topics_for_event_loop();
     };
 }
 #endif

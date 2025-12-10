@@ -33,13 +33,14 @@ namespace subscriber {
 
     public:
         void startEventLoopForAcceptHandle(repeater::GlobalContext &context);
+        void startEventLoopForDispatching(repeater::GlobalContext &context);
 
     protected:
         void acceptHandle(repeater::RepeaterConfig &config, repeater::GlobalContext &context, int client_fd, string client_ip, int client_port);
         void clearConnectionResource(repeater::GlobalContext &context, string client_ip, int client_port);
     
     private:
-        void startMessageDispatchingThread(repeater::GlobalContext &context);
+        // void startMessageDispatchingThread(repeater::GlobalContext &context);
         void startConnectionDetectingThread();
 
         void startAcceptHandleNormalWritingThread(repeater::RepeaterConfig &config, repeater::GlobalContext &context, int client_fd, string client_ip, int client_port, shared_ptr<bool> connection_alived);
@@ -58,7 +59,7 @@ namespace subscriber {
         void releaseConnectionEventData(string client_ip, int client_port);
     };
 
-    struct EventWorkArguments {
+    struct WritingEventWorkArguments {
         shared_ptr<repeater::EventLoopWorker> eventLoop;
         SubscriberBootstrap *subscriber;
         int client_fd;
@@ -69,6 +70,12 @@ namespace subscriber {
         shared_ptr<bool> connection_alived;
         shared_ptr<repeater::ConsumeRecord> consumeRecord;
         unordered_map<string, bool> circleFirstRead;
+    };
+
+    struct DispatchingEventWorkArguments {
+        shared_ptr<repeater::EventLoopWorker> eventLoop;
+        SubscriberBootstrap *subscriber;
+        repeater::GlobalContext &context;
     };
 }
 

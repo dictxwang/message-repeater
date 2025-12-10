@@ -4,29 +4,65 @@ using namespace std;
 
 namespace subscriber {
 
+    void SubscriberBootstrap::startEventLoopForDispatching(repeater::GlobalContext &context) {
+
+        shared_ptr<repeater::EventLoopWorker> eventLoop = std::make_shared<repeater::EventLoopWorker>();
+        DispatchingEventWorkArguments *eventArguments = new DispatchingEventWorkArguments {
+            context.get_dispatch_event_loop_worker(),
+            this,
+            context
+        };
+
+        eventLoop->init([](evutil_socket_t ev_fd, short flags, void * args){
+            DispatchingEventWorkArguments* arguments = static_cast<DispatchingEventWorkArguments*>(args);
+
+            char buf;
+            // Read from pipe to clear it
+            while (read(ev_fd, &buf, 1) == 1) {}
+
+            vector<string> topics = arguments->eventLoop->popWorks();
+            if (topics.size() == 0) {
+                return;
+            }
+
+            for (string topic : topics) {
+                arguments->subscriber->dispatchMessage(topic);
+            }
+
+        }, eventArguments);
+
+        thread event_thread([eventLoop, eventArguments] {
+            info_log("start run event loop for message dispatch to subscribers");
+            eventLoop->run();
+            delete eventArguments;  // Clean up the heap-allocated arguments
+            info_log("stop run event loop for message dispatch to subscribers");
+        });
+        event_thread.detach();
+    }
+
     void SubscriberBootstrap::startEventLoopForAcceptHandle(repeater::GlobalContext &context) {
-        this->startMessageDispatchingThread(context);
+        // this->startMessageDispatchingThread(context);
         this->startConnectionDetectingThread();
     }
 
-    void SubscriberBootstrap::startMessageDispatchingThread(repeater::GlobalContext &context) {
+    // void SubscriberBootstrap::startMessageDispatchingThread(repeater::GlobalContext &context) {
         
-        thread dispatching_thread([this, &context] {
+    //     thread dispatching_thread([this, &context] {
 
-            while (true) {
-                this_thread::sleep_for(chrono::microseconds(5));
-                auto topics = context.pop_message_topics_for_event_loop();
-                if (topics.size() == 0) {
-                    continue;
-                }
-                for (string topic : topics) {
-                    this->dispatchMessage(topic);
-                }
-            }
-        });
-        dispatching_thread.detach();
-        info_log("subscriber start message dispatching thread");
-    }
+    //         while (true) {
+    //             this_thread::sleep_for(chrono::microseconds(5));
+    //             auto topics = context.pop_message_topics_for_event_loop();
+    //             if (topics.size() == 0) {
+    //                 continue;
+    //             }
+    //             for (string topic : topics) {
+    //                 this->dispatchMessage(topic);
+    //             }
+    //         }
+    //     });
+    //     dispatching_thread.detach();
+    //     info_log("subscriber start message dispatching thread");
+    // }
 
     void SubscriberBootstrap::dispatchMessage(string topic) {
         std::shared_lock<std::shared_mutex> w_lock(this->rw_lock_);
@@ -146,7 +182,7 @@ namespace subscriber {
         unordered_map<string, bool> circleFirstRead;
         shared_ptr<repeater::EventLoopWorker> eventLoop = std::make_shared<repeater::EventLoopWorker>();
 
-        EventWorkArguments *eventArguments = new EventWorkArguments {
+        WritingEventWorkArguments *eventArguments = new WritingEventWorkArguments {
             eventLoop,
             this,
             client_fd,
@@ -169,7 +205,7 @@ namespace subscriber {
         );
         
         eventLoop->init([](evutil_socket_t ev_fd, short flags, void * args){
-            EventWorkArguments* arguments = static_cast<EventWorkArguments*>(args);
+            WritingEventWorkArguments* arguments = static_cast<WritingEventWorkArguments*>(args);
 
             char buf;
             // Read from pipe to clear it
