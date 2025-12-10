@@ -36,8 +36,10 @@ namespace repeater {
             }
         }
 
-        this->bootstrap_connections_full_status = std::make_shared<unordered_map<string, bool>>();
+        this->bootstrap_connections_full_status_ = std::make_shared<unordered_map<string, bool>>();
         this->rw_lock_ = std::make_shared<shared_mutex>();
+
+        this->dispatch_event_loop_worker_ = std::make_shared<repeater::EventLoopWorker>();
     }
 
     tgbot::TgApi& GlobalContext::get_tg_bot() {
@@ -70,13 +72,13 @@ namespace repeater {
 
     void GlobalContext::update_connections_full(string role, bool fulled) {
         std::unique_lock<std::shared_mutex> w_lock((*this->rw_lock_));
-        (*this->bootstrap_connections_full_status)[role] = fulled;
+        (*this->bootstrap_connections_full_status_)[role] = fulled;
     }
 
     vector<string> GlobalContext::get_connections_full_roles() {
         std::shared_lock<std::shared_mutex> r_lock((*this->rw_lock_));
         vector<string> roles;
-        for (auto [k, v] : (*this->bootstrap_connections_full_status)) {
+        for (auto [k, v] : (*this->bootstrap_connections_full_status_)) {
             if (v) {
                 roles.push_back(k);
             }

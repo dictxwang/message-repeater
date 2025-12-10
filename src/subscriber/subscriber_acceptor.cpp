@@ -6,7 +6,7 @@ namespace subscriber {
 
     void SubscriberBootstrap::startEventLoopForDispatching(repeater::GlobalContext &context) {
 
-        shared_ptr<repeater::EventLoopWorker> eventLoop = std::make_shared<repeater::EventLoopWorker>();
+        shared_ptr<repeater::EventLoopWorker> eventLoop = context.get_dispatch_event_loop_worker();
         DispatchingEventWorkArguments *eventArguments = new DispatchingEventWorkArguments {
             context.get_dispatch_event_loop_worker(),
             this,

@@ -31,9 +31,9 @@ namespace repeater {
         vector<string> layer_subscribe_topics;
         vector<string> layer_subscribe_addresses;
 
-        shared_ptr<unordered_map<string, bool>> bootstrap_connections_full_status;
+        shared_ptr<unordered_map<string, bool>> bootstrap_connections_full_status_;
 
-        queue<string> message_topics_for_event_loop;
+        // queue<string> message_topics_for_event_loop;
 
         shared_ptr<EventLoopWorker> dispatch_event_loop_worker_;
         shared_ptr<shared_mutex> rw_lock_;
