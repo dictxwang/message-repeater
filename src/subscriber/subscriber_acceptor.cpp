@@ -38,6 +38,7 @@ namespace subscriber {
             info_log("stop run event loop for message dispatch to subscribers");
         });
         event_thread.detach();
+        this_thread::sleep_for(chrono::seconds(1));
     }
 
     void SubscriberBootstrap::startEventLoopForAcceptHandle(repeater::GlobalContext &context) {

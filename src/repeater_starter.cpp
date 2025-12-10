@@ -29,20 +29,21 @@ int main(int argc, char const *argv[]) {
     repeater::GlobalContext global_context;
     global_context.init(config);
 
+    // init and start subscriber bootstrap
+    subscriber::SubscriberBootstrap subscriberBootstrap;
+    subscriberBootstrap.init(connection::SERVER_ROLE_SUBSCRIBER, config.subscriber_listen_address, config.subscriber_listen_port, config.subscriber_max_connection);
+    subscriberBootstrap.start(config, global_context);
+    if (config.subscriber_enable_event_loop) {
+        subscriberBootstrap.startEventLoopForDispatching(global_context);
+        subscriberBootstrap.startEventLoopForAcceptHandle(global_context);
+    }
+
     // init and start publisher bootstrap
     // must new bootstrap out of condition scope
     publisher::PublisherBootstrap publisherBootstrap;
     if (!config.disable_accept_publisher) {
         publisherBootstrap.init(connection::SERVER_ROLE_PUBLISHER, config.publisher_listen_address, config.publisher_listen_port, config.publisher_max_connection);
         publisherBootstrap.start(config, global_context);
-    }
-
-    // init and start subscriber bootstrap
-    subscriber::SubscriberBootstrap subscriberBootstrap;
-    subscriberBootstrap.init(connection::SERVER_ROLE_SUBSCRIBER, config.subscriber_listen_address, config.subscriber_listen_port, config.subscriber_max_connection);
-    subscriberBootstrap.start(config, global_context);
-    if (config.subscriber_enable_event_loop) {
-        subscriberBootstrap.startEventLoopForAcceptHandle(global_context);
     }
 
     // init and start layer subscribe
