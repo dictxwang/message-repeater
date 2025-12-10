@@ -88,18 +88,18 @@ namespace repeater {
 
     // void GlobalContext::push_message_topic_for_event_loop(string topic) {
     //     std::unique_lock<std::shared_mutex> w_lock((*this->rw_lock_));
-    //     this->message_topics_for_event_loop.push(topic);
+    //     this->message_topics_for_event_loop_.push(topic);
     // }
 
     // vector<string> GlobalContext::pop_message_topics_for_event_loop() {
     //     std::unique_lock<std::shared_mutex> w_lock((*this->rw_lock_));
     //     vector<string> topics;
-    //     if (this->message_topics_for_event_loop.empty()) {
+    //     if (this->message_topics_for_event_loop_.empty()) {
     //         return topics;
     //     } else {
-    //         while (!this->message_topics_for_event_loop.empty()) {
-    //             string topic = this->message_topics_for_event_loop.front(); 
-    //             this->message_topics_for_event_loop.pop();
+    //         while (!this->message_topics_for_event_loop_.empty()) {
+    //             string topic = this->message_topics_for_event_loop_.front(); 
+    //             this->message_topics_for_event_loop_.pop();
     //             topics.push_back(topic);
     //         }
     //         return topics;

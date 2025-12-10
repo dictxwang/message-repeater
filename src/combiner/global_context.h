@@ -33,7 +33,7 @@ namespace repeater {
 
         shared_ptr<unordered_map<string, bool>> bootstrap_connections_full_status_;
 
-        // queue<string> message_topics_for_event_loop;
+        // queue<string> message_topics_for_event_loop_;
 
         shared_ptr<EventLoopWorker> dispatch_event_loop_worker_;
         shared_ptr<shared_mutex> rw_lock_;

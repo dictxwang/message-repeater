@@ -32,10 +32,10 @@ namespace subscriber {
         }, eventArguments);
 
         thread event_thread([eventLoop, eventArguments] {
-            info_log("start run event loop for message dispatch to subscribers");
+            info_log("start run event loop for dispatching message to all subscribers");
             eventLoop->run();
             delete eventArguments;  // Clean up the heap-allocated arguments
-            info_log("stop run event loop for message dispatch to subscribers");
+            info_log("stop run event loop for dispatching message to all subscribers");
         });
         event_thread.detach();
         this_thread::sleep_for(chrono::seconds(1));
