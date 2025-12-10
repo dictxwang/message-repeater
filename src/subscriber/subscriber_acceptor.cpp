@@ -146,26 +146,27 @@ namespace subscriber {
         unordered_map<string, bool> circleFirstRead;
         shared_ptr<repeater::EventLoopWorker> eventLoop = std::make_shared<repeater::EventLoopWorker>();
 
-        shared_ptr<EventWorkArguments> arguments = std::make_shared<EventWorkArguments>();
-        arguments->eventLoop = eventLoop;
-        arguments->subscriber = this;
-        arguments->client_fd = client_fd;
-        arguments->client_ip = client_ip;
-        arguments->client_port = client_port;
-        arguments->config = config;
-        arguments->context = context;
-        arguments->connection_alived = connection_alived;
-        arguments->consumeRecord = nullptr;
-        arguments->circleFirstRead = circleFirstRead;
-        arguments->detecting_finished = false;
+        shared_ptr<EventWorkArguments> arguments = std::make_shared<EventWorkArguments>(
+            eventLoop,
+            this,
+            client_fd,
+            client_ip,
+            client_port,
+            config,
+            context,
+            connection_alived,
+            nullptr,
+            circleFirstRead
+        );
 
-        shared_ptr<ConnectionDetectingArguments> detectingArguments = std::make_shared<ConnectionDetectingArguments>();
-        detectingArguments->eventLoop = eventLoop;
-        detectingArguments->client_fd = client_fd;
-        detectingArguments->client_ip = client_ip;
-        detectingArguments->client_port = client_port;
-        detectingArguments->connection_alived = connection_alived;
-        detectingArguments->detecting_finished = false;
+        shared_ptr<ConnectionDetectingArguments> detectingArguments = std::make_shared<ConnectionDetectingArguments>(
+            eventLoop,
+            client_fd,
+            client_ip,
+            client_port,
+            connection_alived,
+            false
+        );
         
         eventLoop->init([](evutil_socket_t ev_fd, short flags, void * args){
             shared_ptr<EventWorkArguments>* arguments = static_cast<shared_ptr<EventWorkArguments>*>(args);

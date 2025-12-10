@@ -69,7 +69,6 @@ namespace subscriber {
         shared_ptr<bool> connection_alived;
         shared_ptr<repeater::ConsumeRecord> consumeRecord;
         unordered_map<string, bool> circleFirstRead;
-        bool detecting_finished;
     };
 }
 
