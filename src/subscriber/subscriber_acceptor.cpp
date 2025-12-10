@@ -50,7 +50,7 @@ namespace subscriber {
 
             while (true) {
                 this_thread::sleep_for(chrono::microseconds(10));
-                for (auto [k, arguments] : this->connection_event_args_map_) {
+                for (auto [k, arguments] : this->connection_detecting_args_map_) {
                     if (arguments->detecting_finished) {
                         continue;
                     }
@@ -158,6 +158,15 @@ namespace subscriber {
         arguments->consumeRecord = nullptr;
         arguments->circleFirstRead = circleFirstRead;
         arguments->detecting_finished = false;
+
+        shared_ptr<ConnectionDetectingArguments> detectingArguments = std::make_shared<ConnectionDetectingArguments>();
+        detectingArguments->eventLoop = eventLoop;
+        detectingArguments->subscriber = this;
+        detectingArguments->client_fd = client_fd;
+        detectingArguments->client_ip = client_ip;
+        detectingArguments->client_port = client_port;
+        detectingArguments->connection_alived = connection_alived;
+        detectingArguments->detecting_finished = false;
         
         eventLoop->init([](evutil_socket_t ev_fd, short flags, void * args){
             shared_ptr<EventWorkArguments>* arguments = static_cast<shared_ptr<EventWorkArguments>*>(args);
@@ -236,6 +245,7 @@ namespace subscriber {
         }, &arguments);
 
         this->putConnectionEventLoop(client_ip, client_port, eventLoop);
+        this->putConnectionDetectingArgs(client_ip, client_port, detectingArguments);
 
         thread event_thread([&eventLoop, client_ip, client_port] {
             info_log("subscriber start run event loop for subscriber connection of {}:{}", client_ip, client_port);
@@ -470,11 +480,11 @@ namespace subscriber {
         this->connection_event_loop_map_[key] = eventWork;
     }
 
-    void SubscriberBootstrap::putConnectionEventArgs(string client_ip, int client_port, shared_ptr<EventWorkArguments> args) {
+    void SubscriberBootstrap::putConnectionDetectingArgs(string client_ip, int client_port, shared_ptr<ConnectionDetectingArguments> args) {
 
         std::unique_lock<std::shared_mutex> w_lock(this->rw_lock_);
         string key = client_ip + ":" + std::to_string(client_port);
-        this->connection_event_args_map_[key] = args;
+        this->connection_detecting_args_map_[key] = args;
     }
 
     void SubscriberBootstrap::putTopicConnection(string topic, string client_ip, int client_port) {
@@ -503,11 +513,11 @@ namespace subscriber {
         }
         int eventLoopCount = this->connection_event_loop_map_.size();
 
-        auto eventArgs = this->connection_event_args_map_.find(key);
-        if (eventArgs != this->connection_event_args_map_.end()) {
-            this->connection_event_args_map_.erase(key);
+        auto eventArgs = this->connection_detecting_args_map_.find(key);
+        if (eventArgs != this->connection_detecting_args_map_.end()) {
+            this->connection_detecting_args_map_.erase(key);
         }
-        int eventArgsCount = this->connection_event_args_map_.size();
+        int detectingArgsCount = this->connection_detecting_args_map_.size();
 
         vector<string> topics;
         for (auto [topic, _] : this->topic_connection_map_) {
@@ -525,6 +535,6 @@ namespace subscriber {
                 this->topic_connection_map_[topic] = remainConnctions;
             }
         }
-        info_log("subscriber release and remove event loop worker for {}:{}. remain {} event loop and {} event args", client_ip, client_port, eventLoopCount, eventArgsCount);
+        info_log("subscriber release and remove event loop worker for {}:{}. remain {} event loop and {} detecting args", client_ip, client_port, eventLoopCount, detectingArgsCount);
     }
 }
