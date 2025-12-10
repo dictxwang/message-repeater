@@ -113,6 +113,6 @@ namespace repeater {
     }
 
     void GlobalContext::notify_message_topic_to_event_loop() {
-        this->dispatch_event_loop_worker_->notifyStartWork()
+        this->dispatch_event_loop_worker_->notifyStartWork();
     }
 }
