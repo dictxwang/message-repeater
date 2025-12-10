@@ -9,6 +9,20 @@
 
 namespace subscriber {
 
+    struct EventWorkArguments {
+        shared_ptr<repeater::EventLoopWorker> eventLoop;
+        SubscriberBootstrap *subscriber;
+        int client_fd;
+        string client_ip;
+        int client_port;
+        repeater::RepeaterConfig &config;
+        repeater::GlobalContext &context;
+        shared_ptr<bool> connection_alived;
+        shared_ptr<repeater::ConsumeRecord> consumeRecord;
+        unordered_map<string, bool> circleFirstRead;
+        bool detecting_finished;
+    };
+
     class SubscriberBootstrap : public connection::AbstractBootstrap {
     public:
         SubscriberBootstrap() {};
@@ -47,20 +61,6 @@ namespace subscriber {
         void putConnectionEventLoop(string client_ip, int client_port, shared_ptr<repeater::EventLoopWorker> eventWork);
         void putTopicConnection(string topic, string client_ip, int client_port);
         void releaseConnectionEventData(string client_ip, int client_port);
-    };
-
-    struct EventWorkArguments {
-        shared_ptr<repeater::EventLoopWorker> eventLoop;
-        SubscriberBootstrap *subscriber;
-        int client_fd;
-        string client_ip;
-        int client_port;
-        repeater::RepeaterConfig &config;
-        repeater::GlobalContext &context;
-        shared_ptr<bool> connection_alived;
-        shared_ptr<repeater::ConsumeRecord> consumeRecord;
-        unordered_map<string, bool> circleFirstRead;
-        bool detecting_finished;
     };
 }
 
