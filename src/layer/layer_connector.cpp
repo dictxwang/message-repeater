@@ -156,6 +156,12 @@ namespace layer {
                     bool appended = context.get_message_circle_composite()->appendMessageToCircle(topic_name, message_body);
                     if (!appended) {
                         warn_log("fail to append message for layer replay {} {}", topic_name, message_body);
+                    } else {
+                        if (config.subscriber_enable_event_loop) {
+                            // context.push_message_topic_for_event_loop(topic_name);
+                            context.submit_message_topic_to_event_loop(topic_name);
+                            context.notify_message_topic_to_event_loop();
+                        }
                     }
                     #ifdef OPEN_STD_DEBUG_LOG
                         std::cout << "append message for layer replay " << topic_name << "," << message_body << "," << appended << std::endl;
