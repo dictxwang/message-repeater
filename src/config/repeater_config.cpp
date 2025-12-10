@@ -42,6 +42,7 @@ namespace repeater {
         this->publisher_listen_port = this->doc_["publisher_listen_port"].asInt();
         this->publisher_max_connection = this->doc_["publisher_max_connection"].asInt();
 
+        this->subscriber_enable_event_loop = this->doc_["subscriber_enable_event_loop"].asBool();
         this->subscriber_listen_address = this->doc_["subscriber_listen_address"].asString();
         this->subscriber_listen_port = this->doc_["subscriber_listen_port"].asInt();
         this->subscriber_max_connection = this->doc_["subscriber_max_connection"].asInt();

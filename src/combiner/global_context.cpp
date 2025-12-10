@@ -84,20 +84,20 @@ namespace repeater {
         return roles;
     }
 
-    void GlobalContext::push_new_message_topic(string topic) {
+    void GlobalContext::push_message_topic_for_event_loop(string topic) {
         std::unique_lock<std::shared_mutex> w_lock((*this->rw_lock_));
-        this->message_topic_queue.push(topic);
+        this->message_topics_for_event_loop.push(topic);
     }
 
-    vector<string> GlobalContext::pop_message_topics() {
+    vector<string> GlobalContext::pop_message_topics_for_event_loop() {
         std::unique_lock<std::shared_mutex> w_lock((*this->rw_lock_));
         vector<string> topics;
-        if (this->message_topic_queue.empty()) {
+        if (this->message_topics_for_event_loop.empty()) {
             return topics;
         } else {
-            while (!this->message_topic_queue.empty()) {
-                string topic = this->message_topic_queue.front(); 
-                this->message_topic_queue.pop();
+            while (!this->message_topics_for_event_loop.empty()) {
+                string topic = this->message_topics_for_event_loop.front(); 
+                this->message_topics_for_event_loop.pop();
                 topics.push_back(topic);
             }
             return topics;

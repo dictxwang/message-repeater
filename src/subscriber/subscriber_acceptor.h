@@ -18,15 +18,23 @@ namespace subscriber {
         shared_mutex rw_lock_;
         unordered_map<string, bool> connection_subscribed_;
         unordered_map<string, shared_ptr<repeater::EventLoopWorker>> connection_event_loop_map_;
+        unordered_map<string, shared_ptr<EventWorkArguments>> connection_event_args_map_;
         unordered_map<string, vector<string>> topic_connection_map_;
 
 
     public:
-        void startMessageDispatch(repeater::GlobalContext &context);
+        void startEventLoopForAcceptHandle(repeater::GlobalContext &context);
 
     protected:
         void acceptHandle(repeater::RepeaterConfig &config, repeater::GlobalContext &context, int client_fd, string client_ip, int client_port);
         void clearConnectionResource(repeater::GlobalContext &context, string client_ip, int client_port);
+    
+    private:
+        void startMessageDispatchingThread(repeater::GlobalContext &context);
+        void startConnectionDetectingThread();
+
+        void startAcceptHandleNormalWritingThread(repeater::RepeaterConfig &config, repeater::GlobalContext &context, int client_fd, string client_ip, int client_port, shared_ptr<bool> connection_alived);
+        void startAcceptHandleEventLoopWritingThread(repeater::RepeaterConfig &config, repeater::GlobalContext &context, int client_fd, string client_ip, int client_port, shared_ptr<bool> connection_alived);
 
         void dispatchMessage(string topic);
         vector<string> parseSubscribeTopics(repeater::GlobalContext &context, string message_body);
@@ -35,6 +43,7 @@ namespace subscriber {
         void removeSubscribed(string client_ip, int client_port);
         bool isSubscribed(string client_ip, int client_port);
 
+        void putConnectionEventArgs(string client_ip, int client_port, shared_ptr<EventWorkArguments> args);
         void putConnectionEventLoop(string client_ip, int client_port, shared_ptr<repeater::EventLoopWorker> eventWork);
         void putTopicConnection(string topic, string client_ip, int client_port);
         void releaseConnectionEventData(string client_ip, int client_port);
@@ -51,6 +60,7 @@ namespace subscriber {
         shared_ptr<bool> connection_alived;
         shared_ptr<repeater::ConsumeRecord> consumeRecord;
         unordered_map<string, bool> circleFirstRead;
+        bool detecting_finished;
     };
 }
 

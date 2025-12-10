@@ -33,7 +33,7 @@ namespace repeater {
         shared_ptr<unordered_map<string, bool>> bootstrap_connections_full_status;
         shared_ptr<shared_mutex> rw_lock_;
 
-        queue<string> message_topic_queue;
+        queue<string> message_topics_for_event_loop;
 
     public:
         void init(RepeaterConfig& config);
@@ -50,8 +50,8 @@ namespace repeater {
         void update_connections_full(string role, bool fulled);
         vector<string> get_connections_full_roles();
 
-        void push_new_message_topic(string topic);
-        vector<string> pop_message_topics();
+        void push_message_topic_for_event_loop(string topic);
+        vector<string> pop_message_topics_for_event_loop();
     };
 }
 #endif

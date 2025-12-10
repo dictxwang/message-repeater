@@ -41,7 +41,9 @@ int main(int argc, char const *argv[]) {
     subscriber::SubscriberBootstrap subscriberBootstrap;
     subscriberBootstrap.init(connection::SERVER_ROLE_SUBSCRIBER, config.subscriber_listen_address, config.subscriber_listen_port, config.subscriber_max_connection);
     subscriberBootstrap.start(config, global_context);
-    subscriberBootstrap.startMessageDispatch(global_context);
+    if (config.subscriber_enable_event_loop) {
+        subscriberBootstrap.startEventLoopForAcceptHandle(global_context);
+    }
 
     // init and start layer subscribe
     if (config.enable_layer_subscribe) {

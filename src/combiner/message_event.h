@@ -44,7 +44,7 @@ namespace repeater {
         event_base* base;
         event* work_event;
         int notify_pipe[2];
-        queue<string> topic_queue;
+        queue<string> work_queue;
         shared_mutex rw_lock_;
 
     public:

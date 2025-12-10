@@ -18,16 +18,16 @@ namespace repeater {
 
     void EventLoopWorker::submitWork(string topic) {
         std::unique_lock<std::shared_mutex> w_lock(this->rw_lock_);
-        this->topic_queue.push(topic);
+        this->work_queue.push(topic);
     }
 
     vector<string> EventLoopWorker::popWorks() {
         vector<string> items;
         std::unique_lock<std::shared_mutex> w_lock(this->rw_lock_);
-        while (!this->topic_queue.empty()) {
-            string head = this->topic_queue.front();
+        while (!this->work_queue.empty()) {
+            string head = this->work_queue.front();
             items.push_back(head);
-            this->topic_queue.pop();
+            this->work_queue.pop();
         }
         return items;
     }
