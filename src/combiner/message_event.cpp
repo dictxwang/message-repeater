@@ -37,16 +37,7 @@ namespace repeater {
     }
 
     void EventLoopWorker::stop() {
-        // First, remove the persistent event
-        // if (this->work_event) {
-        //    event_del(this->work_event);
-        // }
-
-        // Then break the event loop
         event_base_loopbreak(this->base);
-
-        // Notify the event loop to wake up and process the break
-        // notifyWork();
     }
 
     bool EventLoopWorker::notifyStartWork() {
