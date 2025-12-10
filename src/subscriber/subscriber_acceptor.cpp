@@ -146,7 +146,7 @@ namespace subscriber {
         unordered_map<string, bool> circleFirstRead;
         shared_ptr<repeater::EventLoopWorker> eventLoop = std::make_shared<repeater::EventLoopWorker>();
 
-        shared_ptr<EventWorkArguments> arguments = std::make_shared<EventWorkArguments>(
+        EventWorkArguments *eventArguments = new EventWorkArguments {
             eventLoop,
             this,
             client_fd,
@@ -157,7 +157,7 @@ namespace subscriber {
             connection_alived,
             nullptr,
             circleFirstRead
-        );
+        };
 
         shared_ptr<ConnectionDetectingArguments> detectingArguments = std::make_shared<ConnectionDetectingArguments>(
             eventLoop,
@@ -169,35 +169,35 @@ namespace subscriber {
         );
         
         eventLoop->init([](evutil_socket_t ev_fd, short flags, void * args){
-            shared_ptr<EventWorkArguments>* arguments = static_cast<shared_ptr<EventWorkArguments>*>(args);
+            EventWorkArguments* arguments = static_cast<EventWorkArguments*>(args);
 
             char buf;
             // Read from pipe to clear it
             while (read(ev_fd, &buf, 1) == 1) {
                 if (buf == 5) {
-                    warn_log("event loop receive stop notify for subscriber connection of {}:{}", arguments->get()->client_ip, arguments->get()->client_port);
-                    arguments->get()->eventLoop->stop();
+                    warn_log("event loop receive stop notify for subscriber connection of {}:{}", arguments->client_ip, arguments->client_port);
+                    arguments->eventLoop->stop();
                     return;
                 }
             }
 
-            if (!arguments->get()->connection_alived) {
+            if (!(*arguments->connection_alived)) {
                 return;
             }
-            if (!arguments->get()->subscriber->isSubscribed(arguments->get()->client_ip, arguments->get()->client_port)) {
+            if (!arguments->subscriber->isSubscribed(arguments->client_ip, arguments->client_port)) {
                 return;
             }
 
-            if (arguments->get()->consumeRecord == nullptr) {
-                optional<shared_ptr<repeater::ConsumeRecord>> record = arguments->get()->context.get_consume_record_composite()->getRecord(arguments->get()->client_ip, arguments->get()->client_port);
+            if (arguments->consumeRecord == nullptr) {
+                optional<shared_ptr<repeater::ConsumeRecord>> record = arguments->context.get_consume_record_composite()->getRecord(arguments->client_ip, arguments->client_port);
                 if (!record.has_value()) {
                     return;
                 } else {
-                    arguments->get()->consumeRecord = record.value();
+                    arguments->consumeRecord = record.value();
                 }
             }
 
-            vector<string> topics = arguments->get()->eventLoop->popWorks();
+            vector<string> topics = arguments->eventLoop->popWorks();
             if (topics.size() == 0) {
                 return;
             }
@@ -205,15 +205,15 @@ namespace subscriber {
 
             for (string topic : topics) {
 
-                optional<repeater::CircleMeta> meta = arguments->get()->consumeRecord->getMeta(topic);
+                optional<repeater::CircleMeta> meta = arguments->consumeRecord->getMeta(topic);
                 if (meta.has_value()) {
 
                     bool firstReadCircle = false;
-                    if (arguments->get()->circleFirstRead.find(topic) == arguments->get()->circleFirstRead.end()) {
+                    if (arguments->circleFirstRead.find(topic) == arguments->circleFirstRead.end()) {
                         firstReadCircle = true;
-                        arguments->get()->circleFirstRead[topic] = true;
+                        arguments->circleFirstRead[topic] = true;
                     }
-                    optional<shared_ptr<repeater::MessageCircle>> circle = arguments->get()->context.get_message_circle_composite()->getCircle(topic);
+                    optional<shared_ptr<repeater::MessageCircle>> circle = arguments->context.get_message_circle_composite()->getCircle(topic);
                     if (circle.has_value()) {
                         tuple<optional<string>, int, int> message_result = circle.value()->getMessageAndCircleMeta(meta->overlapping_turns, meta->index_offset, firstReadCircle);
                         auto message = std::get<0>(message_result);
@@ -224,11 +224,11 @@ namespace subscriber {
 
                             if (message.value().size() > 0) {
                                 // write message to client
-                                if (!arguments->get()->subscriber->sendSocketData(arguments->get()->client_fd, topic, message.value())) {
+                                if (!arguments->subscriber->sendSocketData(arguments->client_fd, topic, message.value())) {
                                     // write fail, remove subscribed
-                                    arguments->get()->subscriber->removeSubscribed(arguments->get()->client_ip, arguments->get()->client_port);
-                                    (*arguments->get()->connection_alived) = false;
-                                    warn_log("subscriber write fail and remove subscribed for {}:{}", arguments->get()->client_ip, arguments->get()->client_port);
+                                    arguments->subscriber->removeSubscribed(arguments->client_ip, arguments->client_port);
+                                    (*arguments->connection_alived) = false;
+                                    warn_log("subscriber write fail and remove subscribed for {}:{}", arguments->client_ip, arguments->client_port);
                                     break;
                                 }
                             }
@@ -237,24 +237,26 @@ namespace subscriber {
                             int producer_overlapping = std::get<1>(message_result);
                             int producer_index_offset = std::get<2>(message_result);
                     
-                            arguments->get()->consumeRecord->updateMeta(topic, producer_overlapping, producer_index_offset);
+                            arguments->consumeRecord->updateMeta(topic, producer_overlapping, producer_index_offset);
                         }
                     }
                 }
             }
-        }, &arguments);
+        }, eventArguments);
 
         this->putConnectionEventLoop(client_ip, client_port, eventLoop);
         this->putConnectionDetectingArgs(client_ip, client_port, detectingArguments);
 
-        thread event_thread([&eventLoop, client_ip, client_port] {
+        thread event_thread([eventLoop, eventArguments, client_ip, client_port] {
             info_log("subscriber start run event loop for subscriber connection of {}:{}", client_ip, client_port);
             eventLoop->run();
+            // this_thread::sleep_for(chrono::seconds(1));
+            delete eventArguments;  // Clean up the heap-allocated arguments
             info_log("subscriber stop run event loop for subscriber connection of {}:{}", client_ip, client_port);
         });
         event_thread.detach();
 
-        // thread detecting_thread([&eventLoop, arguments] {
+        // thread detecting_thread([&eventLoop, eventArguments] {
 
         //     while (true) {
         //         this_thread::sleep_for(chrono::milliseconds(1));
