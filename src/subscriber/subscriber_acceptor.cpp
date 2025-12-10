@@ -49,7 +49,7 @@ namespace subscriber {
         thread detecting_thread([this] {
 
             while (true) {
-                this_thread::sleep_for(chrono::microseconds(10));
+                this_thread::sleep_for(chrono::milliseconds(1));
                 for (auto [k, arguments] : this->connection_detecting_args_map_) {
                     if (arguments->detecting_finished) {
                         continue;
@@ -294,7 +294,7 @@ namespace subscriber {
         if (config.subscriber_enable_event_loop) {
             this->startAcceptHandleEventLoopWritingThread(config, context, client_fd, client_ip, client_port, connection_alived);
         } else {
-            this->startAcceptHandleEventLoopWritingThread(config, context, client_fd, client_ip, client_port, connection_alived);
+            this->startAcceptHandleNormalWritingThread(config, context, client_fd, client_ip, client_port, connection_alived);
         }
 
         thread reading_thread([this, client_fd, client_ip, client_port, &config, &context, connection_alived] {
