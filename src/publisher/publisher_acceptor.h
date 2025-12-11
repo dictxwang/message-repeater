@@ -3,6 +3,8 @@
 
 #include "connection/acceptor.h"
 #include <iostream>
+#include <cerrno>
+#include <cstring>
 
 namespace publisher {
 

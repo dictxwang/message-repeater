@@ -14,8 +14,10 @@ namespace publisher {
             if (bytes_received != HEADER_SIZE) {
                 if (bytes_received == 0) {
                     err_log("client of {} disconnected", this->role_);
+                } else if (bytes_received == -1) {
+                    err_log("fail to read any data of header of type from client of {}, error: {} ({})", this->role_, strerror(errno), errno);
                 } else {
-                    err_log("fail to read header of type from client of {}", this->role_);
+                    err_log("fail to read header of type from client of {}, read length is {}", this->role_, bytes_received);
                 }
                 break;
             }
@@ -29,7 +31,11 @@ namespace publisher {
             std::vector<char> topic_buffer(topic_length + 1);
             bytes_received = recv(client_fd, topic_buffer.data(), topic_length, MSG_WAITALL);
             if (bytes_received != topic_length) {
-                err_log("fail to read complete topic from client of {}", this->role_);
+                if (bytes_received == -1) {
+                    err_log("fail to read any data of topic from client of {}, error: {} ({})", this->role_, strerror(errno), errno);
+                } else {
+                    err_log("fail to read complete topic from client of {}, read length and topic length is {}/{}", this->role_, bytes_received, topic_length);
+                }
                 break;
             }
 
@@ -39,8 +45,10 @@ namespace publisher {
             if (bytes_received != HEADER_SIZE) {
                 if (bytes_received == 0) {
                     err_log("client of {} disconnected", this->role_);
+                } else if (bytes_received == -1) {
+                    err_log("fail to read any data of header of length from client of {}, error: {} ({})", this->role_, strerror(errno), errno);
                 } else {
-                    err_log("fail to read header of length from client of {}", this->role_);
+                    err_log("fail to read header of length from client of {}, read length is {}", this->role_, bytes_received);
                 }
                 break;
             }
@@ -59,7 +67,11 @@ namespace publisher {
             bytes_received = recv(client_fd, message_buffer.data(), message_length, MSG_WAITALL);
             
             if (bytes_received != message_length) {
-                err_log("fail to read complete message from client of {}", this->role_);
+                if (bytes_received == -1) {
+                    err_log("fail to read any data of message from client of {}, error: {} ({})", this->role_, strerror(errno), errno);
+                } else {
+                    err_log("fail to read complete message from client of {}, read length and topic length is {}/{}", this->role_, bytes_received, message_length);
+                }
                 break;
             }
 
