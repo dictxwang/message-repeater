@@ -55,7 +55,7 @@ namespace repeater {
 
         shared_ptr<EventLoopWorker> get_dispatch_event_loop_worker();
         void submit_message_topic_to_event_loop(string topic);
-        void notify_message_topic_to_event_loop();
+        bool notify_message_topic_to_event_loop();
         // void push_message_topic_for_event_loop(string topic);
         // vector<string> pop_message_topics_for_event_loop();
     };

@@ -160,7 +160,10 @@ namespace layer {
                         if (config.subscriber_enable_event_loop) {
                             // context.push_message_topic_for_event_loop(topic_name);
                             context.submit_message_topic_to_event_loop(topic_name);
-                            context.notify_message_topic_to_event_loop();
+                            bool notifyResult = context.notify_message_topic_to_event_loop();
+                            if (!notifyResult) {
+                                warn_log("fail to notify event loop to start for layer replay {} {}", topic_name, message_body);
+                            }
                         }
                     }
                     #ifdef OPEN_STD_DEBUG_LOG

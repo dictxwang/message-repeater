@@ -114,7 +114,7 @@ namespace repeater {
         this->dispatch_event_loop_worker_->submitWork(topic);
     }
 
-    void GlobalContext::notify_message_topic_to_event_loop() {
-        this->dispatch_event_loop_worker_->notifyStartWork();
+    bool GlobalContext::notify_message_topic_to_event_loop() {
+        return this->dispatch_event_loop_worker_->notifyStartWork();
     }
 }

@@ -126,12 +126,15 @@ namespace publisher {
                 if (context.get_message_circle_composite()->createCircleIfAbsent(topic_buffer.data(), config.max_topic_circle_size)) {
                     bool appended = context.get_message_circle_composite()->appendMessageToCircle(topic_buffer.data(), message_text);
                     if (!appended) {
-                        warn_log("fail to append message for layer replay {} {}", topic_buffer.data(), message_text);
+                        warn_log("fail to append message for publisher {} {}", topic_buffer.data(), message_text);
                     } else {
                         if (config.subscriber_enable_event_loop) {
                             // context.push_message_topic_for_event_loop(topic_buffer.data());
                             context.submit_message_topic_to_event_loop(topic_buffer.data());
-                            context.notify_message_topic_to_event_loop();
+                            bool notifyResult = context.notify_message_topic_to_event_loop();
+                            if (!notifyResult) {
+                                warn_log("fail to notify event loop to start for publisher {} {}", topic_buffer.data(), message_text);
+                            }
                         }
                     }
                 } else {

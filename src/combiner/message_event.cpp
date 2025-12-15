@@ -43,7 +43,6 @@ namespace repeater {
     bool EventLoopWorker::notifyStartWork() {
         char byte = 1;
         if (write(notify_pipe[1], &byte, 1) != 1) {
-            warn_log("fail to notify start worker");
             return false;
         } else {
             return true;
@@ -52,7 +51,6 @@ namespace repeater {
     bool EventLoopWorker::notifyStopWork() {
         char byte = 5;
         if (write(notify_pipe[1], &byte, 1) != 1) {
-            warn_log("fail to notify stop worker");
             return false;
         } else {
             return true;

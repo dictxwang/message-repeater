@@ -76,7 +76,10 @@ namespace subscriber {
             auto event_loop = this->connection_event_loop_map_.find(connection);
             if (event_loop != this->connection_event_loop_map_.end()) {
                 event_loop->second->submitWork(topic);
-                event_loop->second->notifyStartWork();
+                bool notifyResult = event_loop->second->notifyStartWork();
+                if (!notifyResult) {
+                    warn_log("fail to notify event loop to start for subscriber {} which topic is {}", connection, topic);
+                }
             }
         }
     }
@@ -105,7 +108,10 @@ namespace subscriber {
                         info_log("subscribe connection be detected has broken for {}:{}", arguments->client_ip, arguments->client_port);
                         close(arguments->client_fd);
                         this->killAlive(arguments->client_ip, arguments->client_port);
-                        arguments->eventLoop->notifyStopWork();
+                        bool notifyResult = arguments->eventLoop->notifyStopWork();
+                        if (!notifyResult) {
+                            warn_log("fail to notify event loop to stop for subscriber {}:{}", arguments->client_ip, arguments->client_port);
+                        }
                         (*arguments->connection_alived) = false;
                         arguments->detecting_finished = true;
                     }
