@@ -90,6 +90,8 @@ namespace subscriber {
 
             while (true) {
                 this_thread::sleep_for(chrono::milliseconds(1));
+                
+                std::shared_lock<std::shared_mutex> r_lock(this->rw_lock_);
                 for (auto [k, arguments] : this->connection_detecting_args_map_) {
                     if (arguments->detecting_finished) {
                         continue;
@@ -116,6 +118,7 @@ namespace subscriber {
                         arguments->detecting_finished = true;
                     }
                 }
+                r_lock.unlock();
             }
         });
         detecting_thread.detach();
