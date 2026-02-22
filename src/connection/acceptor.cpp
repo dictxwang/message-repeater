@@ -197,23 +197,25 @@ namespace connection {
 
     void AbstractBootstrap::refreshKeepAlive(string client_ip, int client_port) {
 
+        std::unique_lock<std::shared_mutex> w_lock(this->rw_lock_);
+
         string key = std::string(client_ip) + ":" + std::to_string(client_port);
         auto connection = this->client_connections_.find(key);
         if (connection != this->client_connections_.end()) {
             connection->second.latestHeartbeat = common_tools::get_current_epoch();
-            std::unique_lock<std::shared_mutex> w_lock(this->rw_lock_);
             this->client_connections_[key] = connection->second;
         }
     }
 
     void AbstractBootstrap::killAlive(string client_ip, int client_port) {
 
+        std::unique_lock<std::shared_mutex> w_lock(this->rw_lock_);
+        
         string key = std::string(client_ip) + ":" + std::to_string(client_port);
         auto connection = this->client_connections_.find(key);
         if (connection != this->client_connections_.end()) {
             // set heartbeat time to old history time
             connection->second.latestHeartbeat = common_tools::get_current_epoch() - 86400;
-            std::unique_lock<std::shared_mutex> w_lock(this->rw_lock_);
             this->client_connections_[key] = connection->second;
         }
     }

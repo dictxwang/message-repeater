@@ -110,7 +110,7 @@ namespace layer {
 
             shared_ptr<bool> socket_disconnected = std::make_shared<bool>(false);
             // 5. Start ping thread
-            thread ping_thread([client_fd, &subscribe_address, socket_disconnected] {
+            thread ping_thread([client_fd, subscribe_address, socket_disconnected] {
                 
                 while (true) {
                     bool is_disconnected = false;

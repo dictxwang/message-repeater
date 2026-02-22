@@ -73,6 +73,7 @@ namespace repeater {
 
     bool MessageCircleComposite::createCircleIfAbsent(string topic, int circle_max_size) {
 
+        std::unique_lock<std::shared_mutex> w_lock(this->rw_lock_);
         if (this->topics_.find(topic) != this->topics_.end()) {
             return true;
         }
@@ -81,7 +82,6 @@ namespace repeater {
             return false;
         }
 
-        std::unique_lock<std::shared_mutex> w_lock(this->rw_lock_);
         if (this->topic_circles_.find(topic) == this->topic_circles_.end()) {
             this->topic_circles_[topic] = std::make_shared<MessageCircle>(topic, circle_max_size);
             this->topics_.insert(topic);
@@ -90,6 +90,7 @@ namespace repeater {
     }
 
     bool MessageCircleComposite::appendMessageToCircle(string topic, string message) {
+        std::shared_lock<std::shared_mutex> r_lock(this->rw_lock_);
         auto circle = this->topic_circles_.find(topic);
         if (circle != this->topic_circles_.end()) {
             circle->second->append(message);
@@ -100,6 +101,7 @@ namespace repeater {
     }
 
     optional<shared_ptr<MessageCircle>> MessageCircleComposite::getCircle(string topic) {
+        std::shared_lock<std::shared_mutex> r_lock(this->rw_lock_);
         auto circle = this->topic_circles_.find(topic);
         if (circle == this->topic_circles_.end()) {
             return nullopt;
@@ -168,13 +170,12 @@ namespace repeater {
             return false;
         }
 
+        std::unique_lock<std::shared_mutex> w_lock(this->rw_lock_);
+
         if (this->consume_records_.size() >= this->max_records_size_) {
             return false;
         }
-
         string key = client_ip + ":" + std::to_string(client_port);
-
-        std::unique_lock<std::shared_mutex> w_lock(this->rw_lock_);
         // auto record = this->consume_records_.find(key);
         // if (record == this->consume_records_.end()) {
         //     shared_ptr<ConsumeRecord> c_record = std::make_shared<ConsumeRecord>(client_ip, client_port, topics, max_circle_size);
