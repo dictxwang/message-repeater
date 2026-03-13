@@ -21,7 +21,9 @@ namespace repeater {
     class EventLoopWorker {
 
     public:
-        EventLoopWorker() {
+         EventLoopWorker() : id(0), base(nullptr), work_event(nullptr) {
+            notify_pipe[0] = -1;
+            notify_pipe[1] = -1;
         }
         ~EventLoopWorker() {
             if (this->work_event) {

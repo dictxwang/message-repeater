@@ -90,6 +90,7 @@ namespace repeater {
         int max_circle_size_;
         vector<string> topics_;
         unordered_map<string, CircleMeta> topic_records_;
+        shared_mutex rw_lock_;
 
     public:
         vector<string> getTopics();

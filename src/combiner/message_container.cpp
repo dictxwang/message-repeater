@@ -20,7 +20,8 @@ namespace repeater {
     }
 
     tuple<optional<string>, int, int> MessageCircle::getMessageAndCircleMeta(int subscribe_overlappings, int index, bool first_read) {
-        
+
+        std::shared_lock<std::shared_mutex> r_lock(this->rw_lock_);
         if (this->meta_.overlapping_turns == 0 && this->meta_.index_offset == 0) {
             // no data in cirle
             return std::make_tuple(nullopt, 0, 0);
@@ -61,6 +62,7 @@ namespace repeater {
     }
 
     CircleMeta MessageCircle::getMeta() {
+        std::shared_lock<std::shared_mutex> r_lock(this->rw_lock_);
         CircleMeta meta;
         meta.index_offset = this->meta_.index_offset;
         meta.overlapping_turns = this->meta_.overlapping_turns;
@@ -120,10 +122,12 @@ namespace repeater {
     }
 
     vector<string> ConsumeRecord::getTopics() {
+        std::shared_lock<std::shared_mutex> r_lock(this->rw_lock_);
         return this->topics_;
     }
 
     optional<CircleMeta> ConsumeRecord::getMeta(string topic) {
+        std::shared_lock<std::shared_mutex> r_lock(this->rw_lock_);
         auto meta = this->topic_records_.find(topic);
         if (meta == this->topic_records_.end()) {
             return nullopt;
@@ -136,6 +140,7 @@ namespace repeater {
     }
 
     void ConsumeRecord::updateMeta(string topic, int producer_overlapping, int producer_index_offset) {
+        std::unique_lock<std::shared_mutex> w_lock(this->rw_lock_);
         auto meta = this->topic_records_.find(topic);
         if (meta == this->topic_records_.end()) {
             // not supported topic
