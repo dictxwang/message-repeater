@@ -18,6 +18,7 @@ namespace connection {
         this->server_fd_ = socket(AF_INET, SOCK_STREAM, 0);
         if (this->server_fd_ <= 0) {
             err_log("fail to create socket: {}", strerror(errno));
+            this->server_fd_ = -1;
             return;
         }
 
@@ -26,6 +27,7 @@ namespace connection {
         if (setsockopt(this->server_fd_, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))) {
             err_log("fail to set socket options: {}", strerror(errno));
             close(this->server_fd_);
+            this->server_fd_ = -1;
             return;
         }
 
@@ -39,12 +41,14 @@ namespace connection {
         if (inet_pton(AF_INET, listen_address.c_str(), &address.sin_addr) <= 0) {
             err_log("invalid address: {}", listen_address);
             close(this->server_fd_);
+            this->server_fd_ = -1;
             return;
         }
 
         if (::bind(this->server_fd_, (struct sockaddr*)&address, sizeof(address)) < 0) {
             err_log("failed to bind: {}", strerror(errno));
             close(this->server_fd_);
+            this->server_fd_ = -1;
             return;
         }
 
@@ -52,6 +56,7 @@ namespace connection {
         if (listen(this->server_fd_, 10) < 0) {
             err_log("failed to listen: {}", strerror(errno));
             close(this->server_fd_);
+            this->server_fd_ = -1;
             return;
         }
 
@@ -75,7 +80,7 @@ namespace connection {
 
     void AbstractBootstrap::startAccept(repeater::RepeaterConfig &config, repeater::GlobalContext &context) {
 
-        if (this->server_fd_ < 0) {
+        if (this->server_fd_ <= 0) {
             err_log("server not initailized");
             return;
         }
@@ -92,6 +97,7 @@ namespace connection {
                     continue;  // Interrupted, retry
                 }
                 err_log("failed to accept connection: {}", strerror(errno));
+                this_thread::sleep_for(chrono::seconds(1));
                 continue;
             }
 
