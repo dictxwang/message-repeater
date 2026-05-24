@@ -42,7 +42,11 @@ namespace repeater {
 
     bool EventLoopWorker::notifyStartWork() {
         char byte = 1;
-        if (write(notify_pipe[1], &byte, 1) != 1) {
+        ssize_t write_result = write(notify_pipe[1], &byte, 1);
+        if (write_result != 1) {
+            int err = errno;
+            warn_log("fail to notify event loop to start: worker_id={}, fd={}, write_result={}, errno={}, error={}",
+                this->id, notify_pipe[1], write_result, err, strerror(err));
             return false;
         } else {
             return true;
@@ -50,7 +54,11 @@ namespace repeater {
     }
     bool EventLoopWorker::notifyStopWork() {
         char byte = 5;
-        if (write(notify_pipe[1], &byte, 1) != 1) {
+        ssize_t write_result = write(notify_pipe[1], &byte, 1);
+        if (write_result != 1) {
+            int err = errno;
+            warn_log("fail to notify event loop to stop: worker_id={}, fd={}, write_result={}, errno={}, error={}",
+                this->id, notify_pipe[1], write_result, err, strerror(err));
             return false;
         } else {
             return true;

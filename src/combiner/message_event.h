@@ -5,6 +5,8 @@
 #include <functional>
 #include <signal.h>
 #include <unistd.h>
+#include <cerrno>
+#include <cstring>
 #include <thread>
 #include <chrono>
 #include <queue>
