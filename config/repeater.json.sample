@@ -20,6 +20,10 @@
         "Sample0001",
         "Sample0002"
     ],
+    "disabled_subscribe_topics": [
+        "Sample000X",
+        "Sample10_*"
+    ],
 
     "socket_write_timeout_second": 5,
 

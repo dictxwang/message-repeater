@@ -485,7 +485,7 @@ namespace subscriber {
             // {"topics": ["T001","T002"]}
             if (json_result.isMember("topics") && json_result["topics"].isArray()) {
                 for (Json::Value t : json_result["topics"]) {
-                    if (context.is_allown_topic(t.asString())) {
+                    if (context.is_allown_topic(t.asString()) && !context.is_disabled_subscribe_topic(t.asString())) {
                         topics.insert(t.asString());
                     }
                 }

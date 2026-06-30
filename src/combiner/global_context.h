@@ -11,6 +11,7 @@
 #include "message_container.h"
 #include "message_event.h"
 #include "tgbot/api.h"
+#include "util/string_helper.h"
 
 using namespace std;
 
@@ -25,6 +26,8 @@ namespace repeater {
         tgbot::TgApi tg_bot;
         set<string> allown_topics;
         bool allown_all_topics = false;
+        set<string> disabled_subscribe_topics;
+        vector<string> disabled_subscribe_topics_prefix;
         shared_ptr<MessageCircleComposite> message_circle_composite_;
         shared_ptr<ConsumeRecordComposite> consume_record_composite_;
 
@@ -44,8 +47,9 @@ namespace repeater {
         tgbot::TgApi& get_tg_bot();
         shared_ptr<MessageCircleComposite> get_message_circle_composite();
         shared_ptr<ConsumeRecordComposite> get_consume_record_composite();
-        bool is_allown_topic(string topic);
         bool is_reserved_topic(string topic);
+        bool is_allown_topic(string topic);
+        bool is_disabled_subscribe_topic(string topic);
         
         vector<string> &get_layer_subscribe_topics();
         vector<string> &get_layer_subscribe_addresses();

@@ -18,6 +18,17 @@ namespace repeater {
             }
         }
 
+        for (string topic : config.disabled_subscribe_topics) {
+            if (this->is_reserved_topic(topic)) {
+                continue;
+            }
+            if (strHelper::endsWith(topic, "*")) {
+                this->disabled_subscribe_topics_prefix.emplace_back(strHelper::replaceString(topic, "*", ""));
+            } else {
+                this->disabled_subscribe_topics.insert(topic);
+            }
+        }
+
         this->message_circle_composite_ = std::make_shared<MessageCircleComposite>();
         this->message_circle_composite_->init(config.max_topic_number);
 
@@ -54,12 +65,24 @@ namespace repeater {
         return this->consume_record_composite_;
     }
 
+    bool GlobalContext::is_reserved_topic(string topic) {
+        return topic == "*" || topic == "ping" || topic == "pong" || topic == "subscribe" || topic == "error";
+    }
+
     bool GlobalContext::is_allown_topic(string topic) {
         return !this->is_reserved_topic(topic) && (this->allown_all_topics || this->allown_topics.find(topic) != this->allown_topics.end());
     }
 
-    bool GlobalContext::is_reserved_topic(string topic) {
-        return topic == "*" || topic == "ping" || topic == "pong" || topic == "subscribe" || topic == "error";
+    bool GlobalContext::is_disabled_subscribe_topic(string topic) {
+        if (this->disabled_subscribe_topics.find(topic) != this->disabled_subscribe_topics.end()) {
+            return true;
+        }
+        for (string prefix : this->disabled_subscribe_topics_prefix) {
+            if (strHelper::startsWith(topic, prefix)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     vector<string> &GlobalContext::get_layer_subscribe_topics() {

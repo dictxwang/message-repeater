@@ -31,6 +31,7 @@ namespace repeater {
         int max_connection_idle_second;
 
         vector<string> allown_topics;
+        vector<string> disabled_subscribe_topics;
         int socket_write_timeout_second;
 
         bool enable_layer_subscribe;
