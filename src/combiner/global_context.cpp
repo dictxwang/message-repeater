@@ -25,8 +25,10 @@ namespace repeater {
             if (strHelper::endsWith(topic, "*")) {
                 strHelper::replaceString(topic, "*", "");
                 this->disabled_subscribe_topics_prefix.emplace_back(topic);
+                info_log("[context] diabled subscribe topic prefix: {}", topic);
             } else {
                 this->disabled_subscribe_topics.insert(topic);
+                info_log("[context] diabled subscribe topic: {}", topic);
             }
         }
 

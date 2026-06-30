@@ -10,6 +10,7 @@
 #include "config/repeater_config.h"
 #include "message_container.h"
 #include "message_event.h"
+#include "logger/logger.h"
 #include "tgbot/api.h"
 #include "util/string_helper.h"
 
