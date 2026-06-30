@@ -23,7 +23,8 @@ namespace repeater {
                 continue;
             }
             if (strHelper::endsWith(topic, "*")) {
-                this->disabled_subscribe_topics_prefix.emplace_back(strHelper::replaceString(topic, "*", ""));
+                strHelper::replaceString(topic, "*", "");
+                this->disabled_subscribe_topics_prefix.emplace_back(topic);
             } else {
                 this->disabled_subscribe_topics.insert(topic);
             }
