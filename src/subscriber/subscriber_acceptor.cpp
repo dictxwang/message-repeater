@@ -443,13 +443,13 @@ namespace subscriber {
                             // success
                             if (this->sendSocketData(client_fd, connection::MESSAGE_OP_TOPIC_SUBSCRIBE, "ok")) {
                                 this->putSubscribed(client_ip, client_port);
-                                
-                                if (config.subscriber_enable_event_loop) {
-                                    for (string topic : topics) {
+
+                                for (string topic : topics) {
+                                    if (config.subscriber_enable_event_loop) {
                                         this->putTopicConnection(topic, client_ip, client_port);
                                     }
+                                    info_log("client success to subscribe: client_ip={},client_port={},topic={}", client_ip, client_port, topic);
                                 }
-                                info_log("client success to subscribe: client_ip={},client_port={}", client_ip, client_port);
                             }
                         } else {
                             // failure
