@@ -19,7 +19,7 @@ namespace repeater {
         
     }
 
-    tuple<optional<string>, int, int> MessageCircle::getMessageAndCircleMeta(int subscribe_overlappings, int index, bool first_read) {
+    tuple<optional<string>, int, int> MessageCircle::getMessageAndCircleMeta(int subscribe_overlappings, int index, bool first_read, bool skip_historical_messages) {
 
         std::shared_lock<std::shared_mutex> r_lock(this->rw_lock_);
         if (this->meta_.overlapping_turns == 0 && this->meta_.index_offset == 0) {
@@ -46,7 +46,16 @@ namespace repeater {
                     return std::make_tuple("", this->meta_.overlapping_turns, this->meta_.index_offset);
                 }
             } else {
-                return std::make_tuple(this->circle_[index], this->meta_.overlapping_turns, this->meta_.index_offset);
+                if (skip_historical_messages) {
+                    int meta_index_offset = this->meta_.index_offset;
+                    if (meta_index_offset == 0) {
+                        return std::make_tuple(this->circle_[this->max_size_-1], this->meta_.overlapping_turns, this->meta_.index_offset);
+                    } else {
+                        return std::make_tuple(this->circle_[meta_index_offset-1], this->meta_.overlapping_turns, this->meta_.index_offset);
+                    }
+                } else {
+                    return std::make_tuple(this->circle_[index], this->meta_.overlapping_turns, this->meta_.index_offset);
+                }
             }
         }
 

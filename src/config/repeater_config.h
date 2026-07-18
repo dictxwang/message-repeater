@@ -44,6 +44,7 @@ namespace repeater {
         int publisher_max_connection;
         
         bool subscriber_enable_event_loop;
+        bool subscriber_allow_skip_historical;
         string subscriber_listen_address;
         int subscriber_listen_port;
         int subscriber_max_connection;

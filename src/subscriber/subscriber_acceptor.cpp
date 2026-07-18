@@ -158,8 +158,10 @@ namespace subscriber {
 
                         optional<shared_ptr<repeater::MessageCircle>> circle = context.get_message_circle_composite()->getCircle(topic);
                         if (circle.has_value()) {
-                            tuple<optional<string>, int, int> message_result = circle.value()->getMessageAndCircleMeta(meta->overlapping_turns, meta->index_offset, firstReadCircle);
+                            tuple<optional<string>, int, int> message_result = circle.value()->getMessageAndCircleMeta(meta->overlapping_turns, meta->index_offset, firstReadCircle, config.subscriber_allow_skip_historical);
                             auto message = std::get<0>(message_result);
+                            int producer_overlapping = std::get<1>(message_result);
+                            int producer_index_offset = std::get<2>(message_result);
                             if (message.has_value()) {
 
                                 if (message.value().size() > 0) {
@@ -174,8 +176,8 @@ namespace subscriber {
                                 }
 
                                 // update record
-                                int producer_overlapping = std::get<1>(message_result);
-                                int producer_index_offset = std::get<2>(message_result);
+                                record.value()->updateMeta(topic, producer_overlapping, producer_index_offset);
+                            } else {
                                 record.value()->updateMeta(topic, producer_overlapping, producer_index_offset);
                             }
                         }
@@ -265,7 +267,7 @@ namespace subscriber {
                     }
                     optional<shared_ptr<repeater::MessageCircle>> circle = arguments->context.get_message_circle_composite()->getCircle(topic);
                     if (circle.has_value()) {
-                        tuple<optional<string>, int, int> message_result = circle.value()->getMessageAndCircleMeta(meta->overlapping_turns, meta->index_offset, firstReadCircle);
+                        tuple<optional<string>, int, int> message_result = circle.value()->getMessageAndCircleMeta(meta->overlapping_turns, meta->index_offset, firstReadCircle, arguments->config.subscriber_allow_skip_historical);
                         auto message = std::get<0>(message_result);
                         int producer_overlapping = std::get<1>(message_result);
                         int producer_index_offset = std::get<2>(message_result);
@@ -284,9 +286,11 @@ namespace subscriber {
                             }
 
                             // update record
-                            int producer_overlapping = std::get<1>(message_result);
-                            int producer_index_offset = std::get<2>(message_result);
+                            // int producer_overlapping = std::get<1>(message_result);
+                            // int producer_index_offset = std::get<2>(message_result);
                     
+                            arguments->consumeRecord->updateMeta(topic, producer_overlapping, producer_index_offset);
+                        } else {
                             arguments->consumeRecord->updateMeta(topic, producer_overlapping, producer_index_offset);
                         }
                     }

@@ -43,6 +43,7 @@
     "publisher_max_connection": 10,
 
     "subscriber_enable_event_loop": false,
+    "subscriber_allow_skip_historical": false,
     "subscriber_listen_address": "127.0.0.1",
     "subscriber_listen_port": 20001,
     "subscriber_max_connection": 20
