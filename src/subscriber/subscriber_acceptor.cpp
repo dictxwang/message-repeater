@@ -132,7 +132,9 @@ namespace subscriber {
     void SubscriberBootstrap::startAcceptHandleNormalWritingThread(repeater::RepeaterConfig &config, repeater::GlobalContext &context, int client_fd, string client_ip, int client_port, shared_ptr<bool> connection_alived) {
         
         thread write_thread([this, client_fd, client_ip, client_port, &config, &context, connection_alived] {
-            bool firstReadCircle = true;
+            
+            unordered_map<string, bool> circleFirstRead;
+            
             while (true) {
                 this_thread::sleep_for(chrono::microseconds(100));
                 if (!(*connection_alived)) {
@@ -153,12 +155,18 @@ namespace subscriber {
 
                 for (string topic : record.value()->getTopics()) {
 
+                    bool firstReadCircle = false;
+                    if (circleFirstRead.find(topic) == circleFirstRead.end()) {
+                        firstReadCircle = true;
+                        circleFirstRead[topic] = true;
+                    }
+
                     optional<repeater::CircleMeta> meta = record.value()->getMeta(topic);
                     if (meta.has_value()) {
 
                         optional<shared_ptr<repeater::MessageCircle>> circle = context.get_message_circle_composite()->getCircle(topic);
                         if (circle.has_value()) {
-                            tuple<optional<string>, int, int> message_result = circle.value()->getMessageAndCircleMeta(meta->overlapping_turns, meta->index_offset, firstReadCircle, config.subscriber_allow_skip_historical);
+                            tuple<optional<string>, int, int> message_result = circle.value()->getMessageAndCircleMeta(meta->overlapping_turns, meta->index_offset, firstReadCircle, config.subscriber_always_send_latest);
                             auto message = std::get<0>(message_result);
                             if (message.has_value()) {
 
@@ -176,12 +184,11 @@ namespace subscriber {
                                 // update record
                                 int producer_overlapping = std::get<1>(message_result);
                                 int producer_index_offset = std::get<2>(message_result);
-                                record.value()->updateMeta(topic, producer_overlapping, producer_index_offset);
+                                record.value()->updateMeta(topic, producer_overlapping, producer_index_offset, config.subscriber_always_send_latest);
                             }
                         }
                     }
                 }
-                firstReadCircle = false;
             }
             close(client_fd);
             this->killAlive(client_ip, client_port);
@@ -285,7 +292,7 @@ namespace subscriber {
                             int producer_overlapping = std::get<1>(message_result);
                             int producer_index_offset = std::get<2>(message_result);
                     
-                            arguments->consumeRecord->updateMeta(topic, producer_overlapping, producer_index_offset);
+                            arguments->consumeRecord->updateMeta(topic, producer_overlapping, producer_index_offset, arguments->config.subscriber_allow_skip_historical);
                         }
                     }
                 }

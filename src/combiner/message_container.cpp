@@ -19,7 +19,7 @@ namespace repeater {
         
     }
 
-    tuple<optional<string>, int, int> MessageCircle::getMessageAndCircleMeta(int subscribe_overlappings, int index, bool first_read, bool skip_historical_messages) {
+    tuple<optional<string>, int, int> MessageCircle::getMessageAndCircleMeta(int subscribe_overlappings, int index, bool first_read, bool send_latest) {
 
         std::shared_lock<std::shared_mutex> r_lock(this->rw_lock_);
         if (this->meta_.overlapping_turns == 0 && this->meta_.index_offset == 0) {
@@ -46,7 +46,7 @@ namespace repeater {
                     return std::make_tuple("", this->meta_.overlapping_turns, this->meta_.index_offset);
                 }
             } else {
-                if (skip_historical_messages) {
+                if (send_latest) {
                     int meta_index_offset = this->meta_.index_offset;
                     if (meta_index_offset == 0) {
                         return std::make_tuple(this->circle_[this->max_size_-1], this->meta_.overlapping_turns, this->meta_.index_offset);
@@ -148,7 +148,7 @@ namespace repeater {
         }
     }
 
-    void ConsumeRecord::updateMeta(string topic, int producer_overlapping, int producer_index_offset, bool skip_hitorical) {
+    void ConsumeRecord::updateMeta(string topic, int producer_overlapping, int producer_index_offset, bool send_latest) {
         std::unique_lock<std::shared_mutex> w_lock(this->rw_lock_);
         auto meta = this->topic_records_.find(topic);
         if (meta == this->topic_records_.end()) {
@@ -159,7 +159,7 @@ namespace repeater {
                 meta->second.overlapping_turns = producer_overlapping;
                 meta->second.index_offset = producer_index_offset;
             } else {
-                if (skip_hitorical)  {
+                if (send_latest)  {
                     meta->second.overlapping_turns = producer_overlapping;
                     meta->second.index_offset = producer_index_offset;
                 } else {

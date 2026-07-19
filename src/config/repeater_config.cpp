@@ -48,10 +48,10 @@ namespace repeater {
         this->publisher_max_connection = this->doc_["publisher_max_connection"].asInt();
 
         this->subscriber_enable_event_loop = this->doc_["subscriber_enable_event_loop"].asBool();
-        if (this->doc_.isMember("subscriber_allow_skip_historical")) {
-            this->subscriber_allow_skip_historical = this->doc_["subscriber_allow_skip_historical"].asBool();
+        if (this->doc_.isMember("subscriber_always_send_latest")) {
+            this->subscriber_always_send_latest = this->doc_["subscriber_always_send_latest"].asBool();
         } else {
-            this->subscriber_allow_skip_historical = false;
+            this->subscriber_always_send_latest = false;
         }
         this->subscriber_listen_address = this->doc_["subscriber_listen_address"].asString();
         this->subscriber_listen_port = this->doc_["subscriber_listen_port"].asInt();
