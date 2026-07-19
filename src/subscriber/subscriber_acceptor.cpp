@@ -259,7 +259,6 @@ namespace subscriber {
                 return;
             }
 
-
             for (string topic : topics) {
 
                 optional<repeater::CircleMeta> meta = arguments->consumeRecord->getMeta(topic);
