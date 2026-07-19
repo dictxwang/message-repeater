@@ -272,7 +272,7 @@ namespace subscriber {
                     }
                     optional<shared_ptr<repeater::MessageCircle>> circle = arguments->context.get_message_circle_composite()->getCircle(topic);
                     if (circle.has_value()) {
-                        tuple<optional<string>, int, int> message_result = circle.value()->getMessageAndCircleMeta(meta->overlapping_turns, meta->index_offset, firstReadCircle, arguments->config.subscriber_allow_skip_historical);
+                        tuple<optional<string>, int, int> message_result = circle.value()->getMessageAndCircleMeta(meta->overlapping_turns, meta->index_offset, firstReadCircle, arguments->config.subscriber_always_send_latest);
                         auto message = std::get<0>(message_result);
                     
                         if (message.has_value()) {
@@ -292,7 +292,7 @@ namespace subscriber {
                             int producer_overlapping = std::get<1>(message_result);
                             int producer_index_offset = std::get<2>(message_result);
                     
-                            arguments->consumeRecord->updateMeta(topic, producer_overlapping, producer_index_offset, arguments->config.subscriber_allow_skip_historical);
+                            arguments->consumeRecord->updateMeta(topic, producer_overlapping, producer_index_offset, arguments->config.subscriber_always_send_latest);
                         }
                     }
                 }
