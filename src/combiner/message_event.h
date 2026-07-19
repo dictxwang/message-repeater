@@ -13,6 +13,7 @@
 #include <vector>
 #include <mutex>
 #include <shared_mutex>
+#include <unordered_map>
 #include "logger/logger.h"
 #include "util/common_tool.h"
 
@@ -49,10 +50,14 @@ namespace repeater {
         event* work_event;
         int notify_pipe[2];
         queue<string> work_queue;
+        bool disable_duplicate_entries;
+        unordered_map<string, bool> work_queue_status;
         shared_mutex rw_lock_;
 
     public:
         void init(event_callback_fn callback, void * args);
+        void setDisableDuplicateEntries(bool disable);
+        void clearWorkQueueStatus(string topic);
         void submitWork(string topic);
         vector<string> popWorks();
         void run();

@@ -202,6 +202,9 @@ namespace subscriber {
         
         unordered_map<string, bool> circleFirstRead;
         shared_ptr<repeater::EventLoopWorker> eventLoop = std::make_shared<repeater::EventLoopWorker>();
+        if (config.subscriber_always_send_latest) {
+            eventLoop->setDisableDuplicateEntries(true);
+        }
 
         WritingEventWorkArguments *eventArguments = new WritingEventWorkArguments {
             eventLoop,
@@ -284,6 +287,8 @@ namespace subscriber {
                                     (*arguments->connection_alived) = false;
                                     warn_log("subscriber write fail and remove subscribed for {}:{}", arguments->client_ip, arguments->client_port);
                                     break;
+                                } else {
+                                    arguments->eventLoop->clearWorkQueueStatus(topic);
                                 }
                             }
 

@@ -13,12 +13,35 @@ namespace repeater {
         this->work_event = event_new(base, this->notify_pipe[0], EV_READ | EV_PERSIST, callback, args);
         event_add(work_event, nullptr);
         this->id = common_tools::get_current_micro_epoch();
+        this->disable_duplicate_entries = false;
         info_log("create event loop worker which id is {}", this->id);
+    }
+
+    void EventLoopWorker::setDisableDuplicateEntries(bool disable) {
+        std::unique_lock<std::shared_mutex> w_lock(this->rw_lock_);
+        this->disable_duplicate_entries = disable;
+    }
+
+    void EventLoopWorker::clearWorkQueueStatus(string topic) {
+        if (!this->disable_duplicate_entries) {
+            return;
+        }
+        std::unique_lock<std::shared_mutex> w_lock(this->rw_lock_);
+        this->work_queue_status[topic] = false;
     }
 
     void EventLoopWorker::submitWork(string topic) {
         std::unique_lock<std::shared_mutex> w_lock(this->rw_lock_);
+        if (this->disable_duplicate_entries) {
+            auto status = this->work_queue_status.find(topic);
+            if (status != this->work_queue_status.end() && status->second) {
+                return;
+            }
+        }
         this->work_queue.push(topic);
+        if (this->work_queue.size() >= 100) {
+            warn_log("work queue size is {} which id is {}", this->work_queue.size(), this->id);
+        }
     }
 
     vector<string> EventLoopWorker::popWorks() {
@@ -37,7 +60,12 @@ namespace repeater {
     }
 
     void EventLoopWorker::stop() {
+        std::unique_lock<std::shared_mutex> w_lock(this->rw_lock_);
         event_base_loopbreak(this->base);
+        this->work_queue_status.clear();
+        while (!this->work_queue.empty()) {
+            this->work_queue.pop();
+        }
     }
 
     bool EventLoopWorker::notifyStartWork() {
