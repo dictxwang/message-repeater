@@ -95,7 +95,7 @@ namespace repeater {
     public:
         vector<string> getTopics();
         optional<CircleMeta> getMeta(string topic);
-        void updateMeta(string topic, int producer_overlapping, int producer_index_offset);
+        void updateMeta(string topic, int producer_overlapping, int producer_index_offset, bool skip_historical);
     };
 
     class ConsumeRecordComposite {

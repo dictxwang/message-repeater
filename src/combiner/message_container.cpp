@@ -148,7 +148,7 @@ namespace repeater {
         }
     }
 
-    void ConsumeRecord::updateMeta(string topic, int producer_overlapping, int producer_index_offset) {
+    void ConsumeRecord::updateMeta(string topic, int producer_overlapping, int producer_index_offset, bool skip_hitorical) {
         std::unique_lock<std::shared_mutex> w_lock(this->rw_lock_);
         auto meta = this->topic_records_.find(topic);
         if (meta == this->topic_records_.end()) {
@@ -159,14 +159,16 @@ namespace repeater {
                 meta->second.overlapping_turns = producer_overlapping;
                 meta->second.index_offset = producer_index_offset;
             } else {
-                // if (meta->second.overlapping_turns < producer_overlapping) {
-                //     meta->second.overlapping_turns = producer_overlapping;
-                // }
-                if (meta->second.index_offset + 1 >= this->max_circle_size_) {
-                    meta->second.index_offset = 0;
-                    meta->second.overlapping_turns += 1;
+                if (skip_hitorical)  {
+                    meta->second.overlapping_turns = producer_overlapping;
+                    meta->second.index_offset = producer_index_offset;
                 } else {
-                    meta->second.index_offset += 1;
+                    if (meta->second.index_offset + 1 >= this->max_circle_size_) {
+                        meta->second.index_offset = 0;
+                        meta->second.overlapping_turns += 1;
+                    } else {
+                        meta->second.index_offset += 1;
+                    }
                 }
             }
 
