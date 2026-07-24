@@ -39,7 +39,7 @@ namespace repeater {
             }
         }
         if (this->work_queue.size() >= 150) {
-            warn_log("work queue size is {} which id is {}", this->work_queue.size(), this->id);
+            // warn_log("work queue size is {} which id is {}", this->work_queue.size(), this->id);
             return;
         }
         this->work_queue.push(topic);
