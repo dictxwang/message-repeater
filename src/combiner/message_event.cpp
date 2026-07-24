@@ -38,12 +38,13 @@ namespace repeater {
                 return;
             }
         }
+        if (this->work_queue.size() >= 150) {
+            warn_log("work queue size is {} which id is {}", this->work_queue.size(), this->id);
+            return;
+        }
         this->work_queue.push(topic);
         if (this->disable_duplicate_entries) {
             this->work_queue_status[topic] = true;
-        }
-        if (this->work_queue.size() >= 100) {
-            warn_log("work queue size is {} which id is {}", this->work_queue.size(), this->id);
         }
     }
 
