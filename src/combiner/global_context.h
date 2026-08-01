@@ -29,6 +29,10 @@ namespace repeater {
         bool allown_all_topics = false;
         set<string> disabled_subscribe_topics;
         vector<string> disabled_subscribe_topics_prefix;
+        vector<string> disabled_subscribe_topics_suffix;
+        set<string> enabled_subscribe_topics;
+        vector<string> enabled_subscribe_topics_prefix;
+        vector<string> enabled_subscribe_topics_suffix;
         shared_ptr<MessageCircleComposite> message_circle_composite_;
         shared_ptr<ConsumeRecordComposite> consume_record_composite_;
 
@@ -51,6 +55,7 @@ namespace repeater {
         bool is_reserved_topic(string topic);
         bool is_allown_topic(string topic);
         bool is_disabled_subscribe_topic(string topic);
+        bool is_enabled_subscribe_topic(string topic);
         
         vector<string> &get_layer_subscribe_topics();
         vector<string> &get_layer_subscribe_addresses();

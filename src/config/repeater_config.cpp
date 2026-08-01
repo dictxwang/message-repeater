@@ -31,6 +31,11 @@ namespace repeater {
                 this->disabled_subscribe_topics.push_back(topic.asString());
             }
         }
+        if (this->doc_.isMember("enabled_subscribe_topics")) {
+            for (Json::Value topic : this->doc_["enabled_subscribe_topics"]) {
+                this->enabled_subscribe_topics.push_back(topic.asString());
+            }
+        }
         
         this->socket_write_timeout_second = this->doc_["socket_write_timeout_second"].asInt();
 

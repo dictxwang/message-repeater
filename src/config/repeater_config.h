@@ -32,6 +32,7 @@ namespace repeater {
 
         vector<string> allown_topics;
         vector<string> disabled_subscribe_topics;
+        vector<string> enabled_subscribe_topics;
         int socket_write_timeout_second;
 
         bool enable_layer_subscribe;

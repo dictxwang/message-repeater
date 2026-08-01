@@ -26,9 +26,31 @@ namespace repeater {
                 strHelper::replaceString(topic, "*", "");
                 this->disabled_subscribe_topics_prefix.emplace_back(topic);
                 info_log("[context] diabled subscribe topic prefix: {}", topic);
+            } else if (strHelper::startsWith(topic, "*")) {
+                strHelper::replaceString(topic, "*", "");
+                this->disabled_subscribe_topics_suffix.emplace_back(topic);
+                info_log("[context] diabled subscribe topic suffix: {}", topic);
             } else {
                 this->disabled_subscribe_topics.insert(topic);
                 info_log("[context] diabled subscribe topic: {}", topic);
+            }
+        }
+
+        for (string topic : config.enabled_subscribe_topics) {
+            if (this->is_reserved_topic(topic)) {
+                continue;
+            }
+            if (strHelper::endsWith(topic, "*")) {
+                strHelper::replaceString(topic, "*", "");
+                this->enabled_subscribe_topics_prefix.emplace_back(topic);
+                info_log("[context] enabled subscribe topic prefix: {}", topic);
+            } else if (strHelper::startsWith(topic, "*")) {
+                strHelper::replaceString(topic, "*", "");
+                this->enabled_subscribe_topics_suffix.emplace_back(topic);
+                info_log("[context] enabled subscribe topic suffix: {}", topic);
+            } else {
+                this->enabled_subscribe_topics.insert(topic);
+                info_log("[context] enabled subscribe topic: {}", topic);
             }
         }
 
@@ -82,6 +104,31 @@ namespace repeater {
         }
         for (string prefix : this->disabled_subscribe_topics_prefix) {
             if (strHelper::startsWith(topic, prefix)) {
+                return true;
+            }
+        }
+        for (string prefix : this->disabled_subscribe_topics_suffix) {
+            if (strHelper::endsWith(topic, prefix)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool GlobalContext::is_enabled_subscribe_topic(string topic) {
+        if (this->enabled_subscribe_topics.size() == 0 && this->enabled_subscribe_topics_prefix.size() == 0 && this->enabled_subscribe_topics_suffix.size() == 0) {
+            return true;
+        }
+        if (this->enabled_subscribe_topics.find(topic) != this->enabled_subscribe_topics.end()) {
+            return true;
+        }
+        for (string prefix : this->enabled_subscribe_topics_prefix) {
+            if (strHelper::startsWith(topic, prefix)) {
+                return true;
+            }
+        }
+        for (string prefix : this->enabled_subscribe_topics_suffix) {
+            if (strHelper::endsWith(topic, prefix)) {
                 return true;
             }
         }

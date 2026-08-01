@@ -22,7 +22,14 @@
     ],
     "disabled_subscribe_topics": [
         "Sample000X",
-        "Sample10_*"
+        "Sample10_*",
+        "*_Sample20"
+    ],
+
+    "enabled_subscribe_topics": [
+        "Sample000X",
+        "Sample10_*",
+        "*_Sample20"
     ],
 
     "socket_write_timeout_second": 5,
