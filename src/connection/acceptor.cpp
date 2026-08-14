@@ -275,33 +275,31 @@ namespace connection {
         // Serialize string data
         buffer.insert(buffer.end(), message.begin(), message.end());
 
-        ssize_t bytes_sent = 0;
-        
-        try {
-            // bytes_sent = send(client_fd, buffer.data(), buffer.size(), 0);
-            bytes_sent = send(client_fd, buffer.data(), buffer.size(), MSG_NOSIGNAL);
-        } catch (std::exception &e) {
+        size_t total_sent = 0;
+        while (total_sent < buffer.size()) {
+            ssize_t bytes_sent = send(
+                client_fd,
+                buffer.data() + total_sent,
+                buffer.size() - total_sent,
+                MSG_NOSIGNAL);
+            if (bytes_sent > 0) {
+                total_sent += static_cast<size_t>(bytes_sent);
+                continue;
+            }
+            if (bytes_sent < 0 && errno == EINTR) {
+                continue;
+            }
             #ifdef OPEN_STD_DEBUG_LOG
-                std::cout << "exception sending data occurred: " << e.what() << std::endl;
+                std::cout << "error sending complete frame: sent=" << total_sent
+                          << ", total=" << buffer.size()
+                          << ", errno=" << errno << std::endl;
             #endif
             return false;
         }
-        
-        if (bytes_sent < 0) {
-            #ifdef OPEN_STD_DEBUG_LOG
-                std::cout << "error sending data or timeout occurred" << std::endl;
-            #endif
-            return false;
-        } else if (bytes_sent == 0) {
-            #ifdef OPEN_STD_DEBUG_LOG
-                std::cout << "no data sent (possibly due to timeout or closed connection)" << std::endl;
-            #endif
-            return false;
-        } else {
-            #ifdef OPEN_STD_DEBUG_LOG
-                std::cout << "server sent " << bytes_sent << " bytes" << std::endl;
-            #endif
-        }
+
+        #ifdef OPEN_STD_DEBUG_LOG
+            std::cout << "server sent " << total_sent << " bytes" << std::endl;
+        #endif
         return true;
     }
 }

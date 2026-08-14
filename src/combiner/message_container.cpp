@@ -1,80 +1,92 @@
 #include "message_container.h"
 
+#include <limits>
+#include <stdexcept>
+
 namespace repeater {
 
     void MessageCircle::append(string message) {
 
         std::unique_lock<std::shared_mutex> w_lock(this->rw_lock_);
-        this->circle_[this->meta_.index_offset] = message;
-        if (this->meta_.index_offset + 1 >= this->max_size_) {
-            this->meta_.overlapping_turns += 1;
-            this->meta_.index_offset = this->meta_.index_offset + 1 - this->max_size_;
-        } else {
-            this->meta_.index_offset += 1;
+        if (this->next_sequence_ == std::numeric_limits<MessageSequence>::max()) {
+            throw std::overflow_error("message sequence exhausted for topic " + this->topic_);
         }
 
+        StoredMessage stored;
+        stored.sequence = this->next_sequence_;
+        stored.body = std::move(message);
+        this->circle_[stored.sequence % this->circle_.size()] = std::move(stored);
+        this->next_sequence_ += 1;
+
         #ifdef OPEN_STD_DEBUG_LOG
-            std::cout << "after append message to circle " << this->topic_ << ": overlapping=" << this->meta_.overlapping_turns << ",offset=" << this->meta_.index_offset << std::endl;
+            std::cout << "after append message to circle " << this->topic_ << ": next_sequence=" << this->next_sequence_ << std::endl;
         #endif
         
     }
 
-    tuple<optional<string>, int, int> MessageCircle::getMessageAndCircleMeta(int subscribe_overlappings, int index, bool first_read, bool send_latest) {
+    MessageReadResult MessageCircle::read(
+        MessageSequence consumer_sequence,
+        bool send_latest,
+        SubscriberOverrunPolicy overrun_policy) {
 
         std::shared_lock<std::shared_mutex> r_lock(this->rw_lock_);
-        if (this->meta_.overlapping_turns == 0 && this->meta_.index_offset == 0) {
-            // no data in cirle
-            return std::make_tuple(nullopt, 0, 0);
+        MessageReadResult result;
+        result.next_sequence = consumer_sequence;
+        result.producer_sequence = this->next_sequence_;
+        result.oldest_available_sequence = this->next_sequence_ > this->circle_.size()
+            ? this->next_sequence_ - this->circle_.size()
+            : 0;
+
+        if (consumer_sequence >= this->next_sequence_) {
+            return result;
         }
 
-        if (subscribe_overlappings > this->meta_.overlapping_turns) {
-            return std::make_tuple(nullopt, this->meta_.overlapping_turns, this->meta_.index_offset);
-        } else if (subscribe_overlappings == this->meta_.overlapping_turns && index >= this->meta_.index_offset) {
-            return std::make_tuple(nullopt, this->meta_.overlapping_turns, this->meta_.index_offset);
-        } else {
-            if (subscribe_overlappings == 0 && index == 0) {
-                if (!first_read) {
-                    // if subscribe not first read, return the latest message
-                    int meta_index_offset = this->meta_.index_offset;
-                    if (meta_index_offset == 0) {
-                        return std::make_tuple(this->circle_[this->max_size_-1], this->meta_.overlapping_turns, this->meta_.index_offset);
-                    } else {
-                        return std::make_tuple(this->circle_[meta_index_offset-1], this->meta_.overlapping_turns, this->meta_.index_offset);
-                    }
-                } else {
-                    // if subscribe first read, return null and make subscribe wait for next new message
-                    return std::make_tuple("", this->meta_.overlapping_turns, this->meta_.index_offset);
-                }
-            } else {
-                if (send_latest) {
-                    int meta_index_offset = this->meta_.index_offset;
-                    if (meta_index_offset == 0) {
-                        return std::make_tuple(this->circle_[this->max_size_-1], this->meta_.overlapping_turns, this->meta_.index_offset);
-                    } else {
-                        return std::make_tuple(this->circle_[meta_index_offset-1], this->meta_.overlapping_turns, this->meta_.index_offset);
-                    }
-                } else {
-                    return std::make_tuple(this->circle_[index], this->meta_.overlapping_turns, this->meta_.index_offset);
-                }
+        MessageSequence target_sequence = consumer_sequence;
+        if (send_latest) {
+            result.overrun = consumer_sequence < result.oldest_available_sequence;
+            target_sequence = this->next_sequence_ - 1;
+            result.skipped_messages = target_sequence - consumer_sequence;
+        } else if (consumer_sequence < result.oldest_available_sequence) {
+            result.overrun = true;
+            if (overrun_policy == SubscriberOverrunPolicy::Disconnect) {
+                result.status = MessageReadStatus::Disconnect;
+                result.skipped_messages = result.oldest_available_sequence - consumer_sequence;
+                return result;
             }
+            if (overrun_policy == SubscriberOverrunPolicy::Latest) {
+                target_sequence = this->next_sequence_ - 1;
+            } else {
+                target_sequence = result.oldest_available_sequence;
+            }
+            result.skipped_messages = target_sequence - consumer_sequence;
         }
 
-        // if (this->meta_.overlapping_turns == 0) {
-        //     return std::make_pair(this->circle_[index], this->meta_.overlapping_turns);
-        // } else {
-        //     if (this->meta_.index_offset == 0) {
-        //         return std::make_pair(this->circle_[index], this->meta_.overlapping_turns - 1);
-        //     } else {
-        //         return std::make_pair(this->circle_[index], this->meta_.overlapping_turns);
-        //     }
-        // }
+        const auto& slot = this->circle_[target_sequence % this->circle_.size()];
+        if (!slot.has_value() || slot->sequence != target_sequence) {
+            result.overrun = true;
+            result.status = MessageReadStatus::Disconnect;
+            return result;
+        }
+
+        result.status = MessageReadStatus::Message;
+        result.message = slot->body;
+        result.message_sequence = target_sequence;
+        result.next_sequence = (send_latest ||
+            (result.overrun && overrun_policy == SubscriberOverrunPolicy::Latest))
+            ? this->next_sequence_
+            : target_sequence + 1;
+        return result;
     }
 
     CircleMeta MessageCircle::getMeta() {
         std::shared_lock<std::shared_mutex> r_lock(this->rw_lock_);
         CircleMeta meta;
-        meta.index_offset = this->meta_.index_offset;
-        meta.overlapping_turns = this->meta_.overlapping_turns;
+        meta.next_sequence = this->next_sequence_;
+        meta.oldest_available_sequence = this->next_sequence_ > this->circle_.size()
+            ? this->next_sequence_ - this->circle_.size()
+            : 0;
+        meta.overlapping_turns = this->next_sequence_ / this->circle_.size();
+        meta.index_offset = this->next_sequence_ % this->circle_.size();
         return meta;
     }
 
@@ -135,45 +147,34 @@ namespace repeater {
         return this->topics_;
     }
 
-    optional<CircleMeta> ConsumeRecord::getMeta(string topic) {
+    optional<ConsumeMeta> ConsumeRecord::getMeta(string topic) {
         std::shared_lock<std::shared_mutex> r_lock(this->rw_lock_);
         auto meta = this->topic_records_.find(topic);
         if (meta == this->topic_records_.end()) {
             return nullopt;
         } else {
-            CircleMeta result;
-            result.index_offset = meta->second.index_offset;
-            result.overlapping_turns = meta->second.overlapping_turns;
-            return result;
+            return meta->second;
         }
     }
 
-    void ConsumeRecord::updateMeta(string topic, int producer_overlapping, int producer_index_offset, bool send_latest) {
+    void ConsumeRecord::initialize(string topic, MessageSequence producer_sequence) {
+        std::unique_lock<std::shared_mutex> w_lock(this->rw_lock_);
+        auto meta = this->topic_records_.find(topic);
+        if (meta == this->topic_records_.end() || meta->second.initialized) {
+            return;
+        }
+        meta->second.next_sequence = producer_sequence;
+        meta->second.initialized = true;
+    }
+
+    void ConsumeRecord::updateSequence(string topic, MessageSequence next_sequence) {
         std::unique_lock<std::shared_mutex> w_lock(this->rw_lock_);
         auto meta = this->topic_records_.find(topic);
         if (meta == this->topic_records_.end()) {
-            // not supported topic
-        } else {
-            if (meta->second.overlapping_turns == 0 && meta->second.index_offset == 0) {
-                // align with producer at the start
-                meta->second.overlapping_turns = producer_overlapping;
-                meta->second.index_offset = producer_index_offset;
-            } else {
-                if (send_latest)  {
-                    meta->second.overlapping_turns = producer_overlapping;
-                    meta->second.index_offset = producer_index_offset;
-                } else {
-                    if (meta->second.index_offset + 1 >= this->max_circle_size_) {
-                        meta->second.index_offset = 0;
-                        meta->second.overlapping_turns += 1;
-                    } else {
-                        meta->second.index_offset += 1;
-                    }
-                }
-            }
-
-            this->topic_records_[topic] = meta->second;
+            return;
         }
+        meta->second.next_sequence = next_sequence;
+        meta->second.initialized = true;
     }
 
     void ConsumeRecordComposite::init(int max_records_size) {

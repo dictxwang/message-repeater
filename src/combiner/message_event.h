@@ -24,7 +24,7 @@ namespace repeater {
     class EventLoopWorker {
 
     public:
-         EventLoopWorker() : id(0), base(nullptr), work_event(nullptr) {
+         EventLoopWorker() : id(0), base(nullptr), work_event(nullptr), disable_duplicate_entries(false) {
             notify_pipe[0] = -1;
             notify_pipe[1] = -1;
         }
@@ -57,8 +57,7 @@ namespace repeater {
     public:
         void init(event_callback_fn callback, void * args);
         void setDisableDuplicateEntries(bool disable);
-        void clearWorkQueueStatus(string topic);
-        void submitWork(string topic);
+        bool submitWork(string topic);
         vector<string> popWorks();
         void run();
         void stop();

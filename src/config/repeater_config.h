@@ -2,6 +2,7 @@
 #define _CONFIG_AGENT_CONFIG_H_
 
 #include "config.h"
+#include "combiner/message_policy.h"
 #include <vector>
 
 using namespace std;
@@ -46,6 +47,7 @@ namespace repeater {
         
         bool subscriber_enable_event_loop;
         bool subscriber_always_send_latest;
+        SubscriberOverrunPolicy subscriber_overrun_policy = SubscriberOverrunPolicy::Latest;
         string subscriber_listen_address;
         int subscriber_listen_port;
         int subscriber_max_connection;

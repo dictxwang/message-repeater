@@ -10,24 +10,60 @@
 #include <set>
 #include <iostream>
 #include <optional>
-#include <tuple>
+#include <cstdint>
+#include <stdexcept>
+#include "combiner/message_policy.h"
 
 using namespace std;
 
 namespace repeater {
 
+    using MessageSequence = uint64_t;
+
+    struct StoredMessage {
+        MessageSequence sequence = 0;
+        string body;
+    };
+
     struct CircleMeta {
-        int overlapping_turns = 0;
-        int index_offset = 0;
+        uint64_t overlapping_turns = 0;
+        size_t index_offset = 0;
+        MessageSequence next_sequence = 0;
+        MessageSequence oldest_available_sequence = 0;
+    };
+
+    enum class MessageReadStatus {
+        NoMessage,
+        Message,
+        Disconnect
+    };
+
+    struct MessageReadResult {
+        MessageReadStatus status = MessageReadStatus::NoMessage;
+        optional<string> message;
+        MessageSequence message_sequence = 0;
+        MessageSequence next_sequence = 0;
+        MessageSequence producer_sequence = 0;
+        MessageSequence oldest_available_sequence = 0;
+        MessageSequence skipped_messages = 0;
+        bool overrun = false;
+    };
+
+    struct ConsumeMeta {
+        MessageSequence next_sequence = 0;
+        bool initialized = false;
     };
 
     class MessageCircle {
     public:
         MessageCircle(string topic, int max_size) {
+            if (max_size <= 0) {
+                throw invalid_argument("message circle size must be greater than zero");
+            }
             this->topic_ = topic;
             this->max_size_ = max_size;
             for (int i = 0; i < max_size; i++) {
-                this->circle_.push_back("");
+                this->circle_.push_back(nullopt);
             }
 
         }
@@ -36,14 +72,17 @@ namespace repeater {
     private:
         int max_size_;
         string topic_;
-        vector<string> circle_;
-        CircleMeta meta_;
+        vector<optional<StoredMessage>> circle_;
+        MessageSequence next_sequence_ = 0;
 
         shared_mutex rw_lock_;
 
     public:
         void append(string message);
-        tuple<optional<string>, int, int> getMessageAndCircleMeta(int subscribe_overlappings, int index, bool first_read, bool send_latest);
+        MessageReadResult read(
+            MessageSequence consumer_sequence,
+            bool send_latest,
+            SubscriberOverrunPolicy overrun_policy);
 
         CircleMeta getMeta();
     };
@@ -73,9 +112,9 @@ namespace repeater {
         ConsumeRecord(string client_ip, int client_port, vector<string> topics, int max_circle_size) {
             this->client_ip_ = client_ip;
             this->client_port_ = client_port;
-            this->max_circle_size_ = max_circle_size;
+            (void)max_circle_size;
             for (string topic : topics) {
-                CircleMeta meta;
+                ConsumeMeta meta;
                 this->topic_records_[topic] = meta;
             }
             for (auto [k, v] : this->topic_records_) {
@@ -87,15 +126,15 @@ namespace repeater {
     private:
         string client_ip_;
         int client_port_;
-        int max_circle_size_;
         vector<string> topics_;
-        unordered_map<string, CircleMeta> topic_records_;
+        unordered_map<string, ConsumeMeta> topic_records_;
         shared_mutex rw_lock_;
 
     public:
         vector<string> getTopics();
-        optional<CircleMeta> getMeta(string topic);
-        void updateMeta(string topic, int producer_overlapping, int producer_index_offset, bool send_latest);
+        optional<ConsumeMeta> getMeta(string topic);
+        void initialize(string topic, MessageSequence producer_sequence);
+        void updateSequence(string topic, MessageSequence next_sequence);
     };
 
     class ConsumeRecordComposite {

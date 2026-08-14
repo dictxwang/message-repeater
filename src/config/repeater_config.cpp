@@ -58,6 +58,19 @@ namespace repeater {
         } else {
             this->subscriber_always_send_latest = false;
         }
+        string subscriber_overrun_policy = "latest";
+        if (this->doc_.isMember("subscriber_overrun_policy")) {
+            subscriber_overrun_policy = this->doc_["subscriber_overrun_policy"].asString();
+        }
+        if (subscriber_overrun_policy == "latest") {
+            this->subscriber_overrun_policy = SubscriberOverrunPolicy::Latest;
+        } else if (subscriber_overrun_policy == "oldest") {
+            this->subscriber_overrun_policy = SubscriberOverrunPolicy::Oldest;
+        } else if (subscriber_overrun_policy == "disconnect") {
+            this->subscriber_overrun_policy = SubscriberOverrunPolicy::Disconnect;
+        } else {
+            return false;
+        }
         this->subscriber_listen_address = this->doc_["subscriber_listen_address"].asString();
         this->subscriber_listen_port = this->doc_["subscriber_listen_port"].asInt();
         this->subscriber_max_connection = this->doc_["subscriber_max_connection"].asInt();

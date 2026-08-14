@@ -64,7 +64,7 @@ namespace repeater {
         vector<string> get_connections_full_roles();
 
         shared_ptr<EventLoopWorker> get_dispatch_event_loop_worker();
-        void submit_message_topic_to_event_loop(string topic);
+        bool submit_message_topic_to_event_loop(string topic);
         bool notify_message_topic_to_event_loop();
         // void push_message_topic_for_event_loop(string topic);
         // vector<string> pop_message_topics_for_event_loop();

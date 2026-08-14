@@ -9,6 +9,12 @@
 
 namespace subscriber {
 
+    enum class TopicDeliveryStatus {
+        NoMessage,
+        Delivered,
+        Disconnect
+    };
+
     struct ConnectionDetectingArguments {
         shared_ptr<repeater::EventLoopWorker> eventLoop;
         int client_fd;
@@ -47,6 +53,14 @@ namespace subscriber {
         void startAcceptHandleEventLoopWritingThread(repeater::RepeaterConfig &config, repeater::GlobalContext &context, int client_fd, string client_ip, int client_port, shared_ptr<bool> connection_alived);
 
         void dispatchMessage(string topic);
+        TopicDeliveryStatus deliverTopic(
+            repeater::RepeaterConfig &config,
+            shared_ptr<repeater::ConsumeRecord> record,
+            shared_ptr<repeater::MessageCircle> circle,
+            int client_fd,
+            string topic,
+            string client_ip,
+            int client_port);
         vector<string> parseSubscribeTopics(repeater::GlobalContext &context, string message_body);
 
         void putSubscribed(string client_ip, int client_port);
@@ -69,7 +83,6 @@ namespace subscriber {
         repeater::GlobalContext &context;
         shared_ptr<bool> connection_alived;
         shared_ptr<repeater::ConsumeRecord> consumeRecord;
-        unordered_map<string, bool> circleFirstRead;
     };
 
     struct DispatchingEventWorkArguments {

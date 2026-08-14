@@ -87,6 +87,21 @@ add_library(combiner ${LIB_COMBINER_SRC})
 target_include_directories(combiner PRIVATE ${LIBEVENT_INCLUDE_DIRS})
 target_link_libraries(combiner PRIVATE ${LIBEVENT_LIBRARY})
 
+enable_testing()
+add_executable(overrun_policy_tests
+    tests/overrun_policy_tests.cpp
+    src/combiner/message_container.cpp
+)
+add_test(NAME overrun_policy_tests COMMAND overrun_policy_tests)
+
+add_executable(event_queue_tests
+    tests/event_queue_tests.cpp
+    src/combiner/message_event.cpp
+)
+target_include_directories(event_queue_tests PRIVATE ${LIBEVENT_INCLUDE_DIRS})
+target_link_libraries(event_queue_tests PRIVATE ${_LIB_SPDLOG} json ${LIBEVENT_LIBRARY})
+add_test(NAME event_queue_tests COMMAND event_queue_tests)
+
 add_executable(${STARTER_REPEATER} "src/repeater_starter.cpp")
 target_link_libraries(${STARTER_REPEATER}
     ${_LIB_SPDLOG}

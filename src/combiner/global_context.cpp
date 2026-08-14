@@ -183,8 +183,8 @@ namespace repeater {
         return this->dispatch_event_loop_worker_;
     }
 
-    void GlobalContext::submit_message_topic_to_event_loop(string topic) {
-        this->dispatch_event_loop_worker_->submitWork(topic);
+    bool GlobalContext::submit_message_topic_to_event_loop(string topic) {
+        return this->dispatch_event_loop_worker_->submitWork(topic);
     }
 
     bool GlobalContext::notify_message_topic_to_event_loop() {

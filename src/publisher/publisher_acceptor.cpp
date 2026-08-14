@@ -130,10 +130,12 @@ namespace publisher {
                     } else {
                         if (config.subscriber_enable_event_loop) {
                             // context.push_message_topic_for_event_loop(topic_buffer.data());
-                            context.submit_message_topic_to_event_loop(topic_buffer.data());
-                            bool notifyResult = context.notify_message_topic_to_event_loop();
-                            if (!notifyResult) {
-                                warn_log("fail to notify event loop to start for publisher {} {}", topic_buffer.data(), message_text);
+                            bool queued = context.submit_message_topic_to_event_loop(topic_buffer.data());
+                            if (queued) {
+                                bool notifyResult = context.notify_message_topic_to_event_loop();
+                                if (!notifyResult) {
+                                    warn_log("fail to notify event loop to start for publisher {} {}", topic_buffer.data(), message_text);
+                                }
                             }
                         }
                     }

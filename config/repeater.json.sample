@@ -51,6 +51,7 @@
 
     "subscriber_enable_event_loop": false,
     "subscriber_always_send_latest": false,
+    "subscriber_overrun_policy": "latest",
     "subscriber_listen_address": "127.0.0.1",
     "subscriber_listen_port": 20001,
     "subscriber_max_connection": 20
