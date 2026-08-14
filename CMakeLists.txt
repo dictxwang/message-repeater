@@ -80,6 +80,7 @@ add_library(subscriber ${LIB_SUBSCRIBER_SRC})
 FILE(GLOB_RECURSE LIB_LAYER_SRC RELATIVE ${CMAKE_SOURCE_DIR}
     "src/layer/*")
 add_library(layer ${LIB_LAYER_SRC})
+target_link_libraries(layer PUBLIC connection)
 # combiner
 FILE(GLOB_RECURSE LIB_COMBINER_SRC RELATIVE ${CMAKE_SOURCE_DIR}
     "src/combiner/*")
@@ -113,7 +114,6 @@ target_link_libraries(${STARTER_REPEATER}
     ${_LIB_SPDLOG}
     json
     config
-    connection
     publisher
     subscriber
     layer
