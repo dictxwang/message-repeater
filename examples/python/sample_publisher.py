@@ -4,6 +4,7 @@ __author__ = 'dictwang'
 import socket
 import time
 import threading
+import uuid
 
 MessageTopic_Ping = "ping"
 MessageTopic_Pong = "pong"
@@ -124,16 +125,13 @@ class MessagePublisher:
         print("ping thread exited")
 
 
-if __name__ == "__main__":
-    publisher = MessagePublisher("127.0.0.1", 10001)
-    publisher.connect()
-
+def send_single_topic(publisher, topic_name):
     # send message
     message_val = 0
     while True:
-        time.sleep(5)
+        time.sleep(1)
 
-        topic = "Sample0001"
+        topic = topic_name
         message_val += 1
         message = "{\"side\": \"BUY\", \"val\": \""+ str(message_val) +"\"}"
         result = publisher.send_message(topic, message)
@@ -141,4 +139,32 @@ if __name__ == "__main__":
             print(f"send message: {message}")
         else:
             # reconnect
+            time.sleep(2)
             publisher.connect()
+
+
+def send_multiple_topics(publisher, topic_prefix, topic_number):
+    while True:
+        time.sleep(0.1)
+        for index in range(1, topic_number+1):
+            topic_name = f"{topic_prefix}{index}"
+            message_body = str(uuid.uuid4())
+            message = "{\"type\": \"multiple\", \"val\": \""+ message_body +"\"}"
+            result = publisher.send_message(topic_name, message)
+            if result:
+                pass
+                # print(f"send message: {message}")
+            else:
+                # reconnect
+                time.sleep(2)
+                publisher.connect()
+
+
+if __name__ == "__main__":
+    publisher = MessagePublisher("127.0.0.1", 10109)
+    publisher.connect()
+
+    # send samples
+    # send_single_topic(publisher=publisher, topic_name="Sample0001")
+
+    send_multiple_topics(publisher=publisher, topic_prefix="SampleMulitple0002_", topic_number=100)
