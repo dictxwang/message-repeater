@@ -159,6 +159,7 @@ The repeater is configured via a JSON file. See `config/repeater_layer.json` for
     "subscriber_enable_event_loop": false,
     "subscriber_always_send_latest": false,
     "subscriber_overrun_policy": "latest",
+    "subscriber_socket_send_buffer_bytes": 0,
     "subscriber_listen_address": "127.0.0.1",
     "subscriber_listen_port": 20001,
     "subscriber_max_connection": 20
@@ -177,6 +178,7 @@ The repeater is configured via a JSON file. See `config/repeater_layer.json` for
 | `subscriber_enable_event_loop` | Enable libevent-based async dispatch |
 | `subscriber_always_send_latest` | Always coalesce pending updates to the newest message |
 | `subscriber_overrun_policy` | Sequential-mode policy when the requested sequence was overwritten: `latest`, `oldest`, or `disconnect` |
+| `subscriber_socket_send_buffer_bytes` | Subscriber socket `SO_SNDBUF`; `0` keeps the operating-system default |
 | `enable_layer_subscribe` | Enable multi-tier upstream subscription |
 | `enable_run_watchdog` | Enable risk controller monitoring |
 | `tg_send_message` | Enable Telegram alert notifications |
@@ -194,6 +196,20 @@ sequence is older than the earliest sequence still retained by the topic ring.
 The event-loop pipe is only a dirty-topic wakeup. Delivery and cursor advancement
 are determined from sequences; a successful pipe notification is not treated as a
 successful socket send. The TCP frame format is unchanged.
+
+Subscriber sockets use non-blocking I/O. Each connection materializes at most one
+business frame outside the topic ring; if the socket becomes full, the unsent frame
+and byte offset are retained and event-loop mode resumes it on `EV_WRITE`. Control
+responses and business messages share the same connection writer, so their frames
+cannot interleave. A topic cursor advances only after its complete frame has been
+accepted by the kernel.
+
+`subscriber_socket_send_buffer_bytes` limits the subscriber-side kernel send buffer.
+The default `0` leaves the operating-system default unchanged. On Linux, the value
+reported by `getsockopt(SO_SNDBUF)` can be larger than the requested value because
+the kernel accounts for socket bookkeeping. Bytes already accepted into the kernel
+cannot be withdrawn, so a smaller configured buffer reduces—but does not eliminate—
+the number of old frames that may already be in TCP when an overrun is detected.
 
 ## Usage
 

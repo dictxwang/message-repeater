@@ -48,6 +48,7 @@ namespace repeater {
         bool subscriber_enable_event_loop;
         bool subscriber_always_send_latest;
         SubscriberOverrunPolicy subscriber_overrun_policy = SubscriberOverrunPolicy::Latest;
+        int subscriber_socket_send_buffer_bytes = 0;
         string subscriber_listen_address;
         int subscriber_listen_port;
         int subscriber_max_connection;

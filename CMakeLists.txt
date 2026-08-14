@@ -102,6 +102,12 @@ target_include_directories(event_queue_tests PRIVATE ${LIBEVENT_INCLUDE_DIRS})
 target_link_libraries(event_queue_tests PRIVATE ${_LIB_SPDLOG} json ${LIBEVENT_LIBRARY})
 add_test(NAME event_queue_tests COMMAND event_queue_tests)
 
+add_executable(nonblocking_send_tests
+    tests/nonblocking_send_tests.cpp
+    src/connection/socket_frame.cpp
+)
+add_test(NAME nonblocking_send_tests COMMAND nonblocking_send_tests)
+
 add_executable(${STARTER_REPEATER} "src/repeater_starter.cpp")
 target_link_libraries(${STARTER_REPEATER}
     ${_LIB_SPDLOG}

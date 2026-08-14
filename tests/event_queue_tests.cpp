@@ -19,8 +19,22 @@ int main() {
         return 1;
     }
 
+    std::string head;
+    if (!worker.popWork(head) || head != "A") {
+        std::cerr << "failed to pop one dirty topic\n";
+        return 1;
+    }
+    if (!worker.hasWorks()) {
+        std::cerr << "remaining dirty topic was lost\n";
+        return 1;
+    }
+    if (!worker.submitWork("A")) {
+        std::cerr << "popped topic could not be queued again\n";
+        return 1;
+    }
+
     const auto first = worker.popWorks();
-    if (first.size() != 2 || first[0] != "A" || first[1] != "B") {
+    if (first.size() != 2 || first[0] != "B" || first[1] != "A") {
         std::cerr << "unexpected dirty topic batch\n";
         return 1;
     }

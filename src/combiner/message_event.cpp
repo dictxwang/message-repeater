@@ -40,6 +40,19 @@ namespace repeater {
         return true;
     }
 
+    bool EventLoopWorker::popWork(string &topic) {
+        std::unique_lock<std::shared_mutex> w_lock(this->rw_lock_);
+        if (this->work_queue.empty()) {
+            return false;
+        }
+        topic = this->work_queue.front();
+        this->work_queue.pop();
+        if (this->disable_duplicate_entries) {
+            this->work_queue_status[topic] = false;
+        }
+        return true;
+    }
+
     vector<string> EventLoopWorker::popWorks() {
         vector<string> items;
         std::unique_lock<std::shared_mutex> w_lock(this->rw_lock_);
@@ -54,12 +67,47 @@ namespace repeater {
         return items;
     }
 
+    bool EventLoopWorker::hasWorks() {
+        std::shared_lock<std::shared_mutex> r_lock(this->rw_lock_);
+        return !this->work_queue.empty();
+    }
+
+    bool EventLoopWorker::initWriteEvent(int socket_fd, event_callback_fn callback, void * args) {
+        if (this->base == nullptr || this->write_event != nullptr) {
+            return false;
+        }
+        this->write_event = event_new(this->base, socket_fd, EV_WRITE | EV_PERSIST, callback, args);
+        return this->write_event != nullptr;
+    }
+
+    bool EventLoopWorker::enableWriteEvent() {
+        if (this->write_event == nullptr) {
+            return false;
+        }
+        if (this->write_event_enabled) {
+            return true;
+        }
+        if (event_add(this->write_event, nullptr) != 0) {
+            return false;
+        }
+        this->write_event_enabled = true;
+        return true;
+    }
+
+    void EventLoopWorker::disableWriteEvent() {
+        if (this->write_event != nullptr && this->write_event_enabled) {
+            event_del(this->write_event);
+            this->write_event_enabled = false;
+        }
+    }
+
     void EventLoopWorker::run() {
         event_base_dispatch(this->base);
     }
 
     void EventLoopWorker::stop() {
         std::unique_lock<std::shared_mutex> w_lock(this->rw_lock_);
+        this->disableWriteEvent();
         event_base_loopbreak(this->base);
         this->work_queue_status.clear();
         while (!this->work_queue.empty()) {
@@ -72,6 +120,9 @@ namespace repeater {
         ssize_t write_result = write(notify_pipe[1], &byte, 1);
         if (write_result != 1) {
             int err = errno;
+            if (write_result < 0 && (err == EAGAIN || err == EWOULDBLOCK)) {
+                return true;
+            }
             warn_log("fail to notify event loop to start: worker_id={}, fd={}, write_result={}, errno={}, error={}",
                 this->id, notify_pipe[1], write_result, err, strerror(err));
             return false;

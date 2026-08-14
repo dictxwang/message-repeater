@@ -18,6 +18,7 @@
 #include "logger/logger.h"
 #include "config/repeater_config.h"
 #include "combiner/global_context.h"
+#include "connection/socket_frame.h"
 #include "util/common_tool.h"
 
 using namespace std;

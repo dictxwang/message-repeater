@@ -71,6 +71,15 @@ namespace repeater {
         } else {
             return false;
         }
+        if (this->doc_.isMember("subscriber_socket_send_buffer_bytes")) {
+            this->subscriber_socket_send_buffer_bytes =
+                this->doc_["subscriber_socket_send_buffer_bytes"].asInt();
+            if (this->subscriber_socket_send_buffer_bytes < 0) {
+                return false;
+            }
+        } else {
+            this->subscriber_socket_send_buffer_bytes = 0;
+        }
         this->subscriber_listen_address = this->doc_["subscriber_listen_address"].asString();
         this->subscriber_listen_port = this->doc_["subscriber_listen_port"].asInt();
         this->subscriber_max_connection = this->doc_["subscriber_max_connection"].asInt();

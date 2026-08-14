@@ -1,7 +1,11 @@
 #ifndef _SUBSCRIBER_ACCEPTOR_H_
 #define _SUBSCRIBER_ACCEPTOR_H_
 
+#include <atomic>
+#include <deque>
 #include <iostream>
+#include <mutex>
+#include <optional>
 #include <set>
 #include "connection/acceptor.h"
 #include "combiner/message_event.h"
@@ -12,15 +16,42 @@ namespace subscriber {
     enum class TopicDeliveryStatus {
         NoMessage,
         Delivered,
+        WouldBlock,
         Disconnect
     };
+
+    enum class PendingWriteStatus {
+        Idle,
+        Complete,
+        WouldBlock,
+        Error
+    };
+
+    struct PendingSubscriberFrame {
+        vector<char> data;
+        size_t offset = 0;
+        bool advances_sequence = false;
+        string topic;
+        repeater::MessageSequence next_sequence = 0;
+    };
+
+    struct SubscriberOutputState {
+        static constexpr size_t MAX_CONTROL_FRAMES = 64;
+
+        mutex control_mutex;
+        deque<vector<char>> control_frames;
+        optional<PendingSubscriberFrame> pending_frame;
+        shared_ptr<repeater::EventLoopWorker> event_loop;
+    };
+
+    struct WritingEventWorkArguments;
 
     struct ConnectionDetectingArguments {
         shared_ptr<repeater::EventLoopWorker> eventLoop;
         int client_fd;
         string client_ip;
         int client_port;
-        shared_ptr<bool> connection_alived;
+        shared_ptr<atomic_bool> connection_alived;
         bool detecting_finished;
     };
 
@@ -49,8 +80,22 @@ namespace subscriber {
         // void startMessageDispatchingThread(repeater::GlobalContext &context);
         void startConnectionDetectingThread();
 
-        void startAcceptHandleNormalWritingThread(repeater::RepeaterConfig &config, repeater::GlobalContext &context, int client_fd, string client_ip, int client_port, shared_ptr<bool> connection_alived);
-        void startAcceptHandleEventLoopWritingThread(repeater::RepeaterConfig &config, repeater::GlobalContext &context, int client_fd, string client_ip, int client_port, shared_ptr<bool> connection_alived);
+        void startAcceptHandleNormalWritingThread(
+            repeater::RepeaterConfig &config,
+            repeater::GlobalContext &context,
+            int client_fd,
+            string client_ip,
+            int client_port,
+            shared_ptr<atomic_bool> connection_alived,
+            shared_ptr<SubscriberOutputState> output_state);
+        void startAcceptHandleEventLoopWritingThread(
+            repeater::RepeaterConfig &config,
+            repeater::GlobalContext &context,
+            int client_fd,
+            string client_ip,
+            int client_port,
+            shared_ptr<atomic_bool> connection_alived,
+            shared_ptr<SubscriberOutputState> output_state);
 
         void dispatchMessage(string topic);
         TopicDeliveryStatus deliverTopic(
@@ -60,7 +105,20 @@ namespace subscriber {
             int client_fd,
             string topic,
             string client_ip,
-            int client_port);
+            int client_port,
+            shared_ptr<SubscriberOutputState> output_state);
+        PendingWriteStatus flushPendingFrame(
+            shared_ptr<SubscriberOutputState> output_state,
+            shared_ptr<repeater::ConsumeRecord> record,
+            int client_fd,
+            string &completed_topic);
+        bool enqueueControlFrame(
+            shared_ptr<SubscriberOutputState> output_state,
+            const string &topic,
+            const string &message);
+        void processEventLoopOutput(WritingEventWorkArguments *arguments);
+        void disconnectEventLoopSubscriber(WritingEventWorkArguments *arguments, const string &reason);
+        void requeueTopicIfPending(WritingEventWorkArguments *arguments, const string &topic);
         vector<string> parseSubscribeTopics(repeater::GlobalContext &context, string message_body);
 
         void putSubscribed(string client_ip, int client_port);
@@ -81,8 +139,9 @@ namespace subscriber {
         int client_port;
         repeater::RepeaterConfig &config;
         repeater::GlobalContext &context;
-        shared_ptr<bool> connection_alived;
+        shared_ptr<atomic_bool> connection_alived;
         shared_ptr<repeater::ConsumeRecord> consumeRecord;
+        shared_ptr<SubscriberOutputState> output_state;
     };
 
     struct DispatchingEventWorkArguments {

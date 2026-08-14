@@ -109,6 +109,44 @@ namespace connection {
                 continue;
             }
 
+            if (this->role_ == SERVER_ROLE_SUBSCRIBER &&
+                config.subscriber_socket_send_buffer_bytes > 0) {
+                int requested_buffer_bytes = config.subscriber_socket_send_buffer_bytes;
+                if (setsockopt(
+                        client_fd,
+                        SOL_SOCKET,
+                        SO_SNDBUF,
+                        &requested_buffer_bytes,
+                        sizeof(requested_buffer_bytes)) < 0) {
+                    warn_log("subscriber fail to set SO_SNDBUF={} for client: {}",
+                        requested_buffer_bytes, strerror(errno));
+                    close(client_fd);
+                    continue;
+                }
+
+                int actual_buffer_bytes = 0;
+                socklen_t actual_buffer_length = sizeof(actual_buffer_bytes);
+                if (getsockopt(
+                        client_fd,
+                        SOL_SOCKET,
+                        SO_SNDBUF,
+                        &actual_buffer_bytes,
+                        &actual_buffer_length) == 0) {
+                    info_log("subscriber socket send buffer requested={} actual={}",
+                        requested_buffer_bytes, actual_buffer_bytes);
+                }
+            }
+
+            if (this->role_ == SERVER_ROLE_SUBSCRIBER) {
+                int socket_flags = fcntl(client_fd, F_GETFL, 0);
+                if (socket_flags < 0 ||
+                    fcntl(client_fd, F_SETFL, socket_flags | O_NONBLOCK) < 0) {
+                    warn_log("subscriber fail to set non-blocking mode for client: {}", strerror(errno));
+                    close(client_fd);
+                    continue;
+                }
+            }
+
             // Set Write timeout
             struct timeval timeout;
             timeout.tv_sec = config.socket_write_timeout_second;  // 5 seconds
@@ -244,36 +282,7 @@ namespace connection {
     }
 
     bool AbstractBootstrap::sendSocketData(int client_fd, string topic, string message) {
-        
-        // // 1. Send topic length (ensure network byte order)
-        // uint32_t net_value = htonl(topic.size()); // Convert to network byte order
-        // ssize_t bytes_sent = send(client_fd, &net_value, 4, 0);
-        // if (bytes_sent)
-
-        // // 2. Send topic string data
-        // send(client_fd, topic.c_str(), topic.size(), 0);
-
-        // // 3. Send the string length (ensure network byte order)
-        // uint32_t msg_len = htonl(message.length()); // Send length of string
-        // send(client_fd, &msg_len, 4, 0);
-
-        // // 4. Send the string data
-        // send(client_fd, message.c_str(), message.length(), 0);
-
-        vector<char> buffer;
-        // Serialize string length
-        uint32_t topic_length = htonl(topic.length());
-        buffer.insert(buffer.end(), reinterpret_cast<const char*>(&topic_length),
-                    reinterpret_cast<const char*>(&topic_length) + sizeof(topic_length));
-        // Serialize string data
-        buffer.insert(buffer.end(), topic.begin(), topic.end());
-
-        // Serialize string length
-        uint32_t message_length = htonl(message.length());
-        buffer.insert(buffer.end(), reinterpret_cast<const char*>(&message_length),
-                    reinterpret_cast<const char*>(&message_length) + sizeof(message_length));
-        // Serialize string data
-        buffer.insert(buffer.end(), message.begin(), message.end());
+        vector<char> buffer = encodeSocketFrame(topic, message);
 
         size_t total_sent = 0;
         while (total_sent < buffer.size()) {
